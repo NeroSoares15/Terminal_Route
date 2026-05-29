@@ -1,0 +1,22 @@
+{
+    "name": "TerminalRoute.Tests",
+    "rootNamespace": "TerminalRoute.Tests",
+    "references": [
+        "TerminalRoute.Core",
+        "TerminalRoute.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false,
+    "optionalUnityReferences": [
+        "TestAssemblies"
+    ]
+}

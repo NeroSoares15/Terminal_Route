@@ -22,7 +22,7 @@ Credits for third-party and generated assets used in the Terminal Route playable
   - Source: https://elbolilloduro.itch.io/roads-procedural
   - Used for: modular road pieces, bridge/road prefabs, traffic signs, and road visual reference.
   - License noted on itch.io page: Creative Commons Zero v1.0 Universal.
-  - Additional source note from page: some textures are credited by the pack author to Pexels and Textures.com.
+  - Additional source note from page: some textures are credited by the pack author to Textures.com, and the page notes those texture images may not be redistributed by default.
 
 ## Generated/Internal Assets
 

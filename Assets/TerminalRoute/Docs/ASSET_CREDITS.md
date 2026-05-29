@@ -1,18 +1,28 @@
 # Terminal Route Asset Credits
 
-Keep this file updated before delivery.
+Credits for third-party and generated assets used in the Terminal Route playable demo.
+
+## Team
+
+- Nero Soares
+- Paulo Monteiro
 
 ## Imported Asset Packs
 
-- Bus stop / bus environment pack from itch.io.
-  - Used for: visual reference, textures, roadside stop materials, tree/fence/glass/road surface look.
-  - License/source URL: add itch.io page here.
-- PSX character pack from itch.io.
-  - Used for: passenger models and horror character reference.
-  - License/source URL: add itch.io page here.
-- Modular road pack from itch.io.
-  - Used for: visual reference and possible future modular road replacement.
-  - License/source URL: add itch.io page here.
+- Characters PSX by Elbolilloduro.
+  - Source: https://elbolilloduro.itch.io/characters-psx
+  - Used for: passenger models and close mirror scare characters.
+  - License noted on itch.io page: Creative Commons Zero v1.0 Universal.
+- Bus Stop by Elbolilloduro.
+  - Source: https://elbolilloduro.itch.io/bus-stop
+  - Used for: bus model, bus stop pieces, roadside props, trees, fences, glass, asphalt/concrete/grass materials, and visual reference.
+  - License noted on itch.io page: Creative Commons Zero v1.0 Universal.
+  - Additional source note from page: some textures are credited by the pack author to Pexels, Textures.com, and Skytool.
+- Roads Procedural by Elbolilloduro.
+  - Source: https://elbolilloduro.itch.io/roads-procedural
+  - Used for: modular road pieces, bridge/road prefabs, traffic signs, and road visual reference.
+  - License noted on itch.io page: Creative Commons Zero v1.0 Universal.
+  - Additional source note from page: some textures are credited by the pack author to Pexels and Textures.com.
 
 ## Generated/Internal Assets
 
@@ -22,6 +32,5 @@ Keep this file updated before delivery.
 
 ## Before Submission
 
-- Add the real itch.io URLs.
-- Add license names or screenshots if the pages do not export license text.
+- Keep a screenshot or downloaded copy of each itch.io page in the final project evidence if the course requires proof of license.
 - Do not claim asset packs as original work; credit them as third-party assets.

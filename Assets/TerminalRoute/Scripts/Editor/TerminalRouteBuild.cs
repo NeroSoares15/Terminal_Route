@@ -62,7 +62,7 @@ namespace TerminalRoute.EditorTools
         {
             TerminalRouteAssetBridge.EnsureAssetLibrary();
             PlayerSettings.productName = "Terminal Route";
-            PlayerSettings.companyName = "IPV ESTGV - Grupo 4";
+            PlayerSettings.companyName = "Nero Soares & Paulo Monteiro";
             PlayerSettings.defaultScreenWidth = 1280;
             PlayerSettings.defaultScreenHeight = 720;
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;

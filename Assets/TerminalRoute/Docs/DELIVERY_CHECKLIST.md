@@ -35,7 +35,8 @@ Expected outputs:
 - Include WebGL build or uploadable WebGL folder.
 - Include `Assets/TerminalRoute/Docs/MVP_README.md`.
 - Include `Assets/TerminalRoute/Docs/ASSET_CREDITS.md`.
-- Add itch.io asset URLs/licenses before final hand-in.
+- Confirm the credits screen shows Nero Soares & Paulo Monteiro.
+- Confirm itch.io asset URLs/licenses are present in `ASSET_CREDITS.md`.
 
 ## Last-Minute Cut Rule
 

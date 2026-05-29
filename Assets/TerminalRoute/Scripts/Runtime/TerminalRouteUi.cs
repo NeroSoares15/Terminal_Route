@@ -103,7 +103,7 @@ namespace TerminalRoute.Runtime
             TextureLayer("Credits Artwork", creditsPanel.transform, "TerminalRoute/Art/MenuBackground");
             Panel("Credits Shade", creditsPanel.transform, new Color(0f, 0f, 0f, 0.78f));
             Text("CREDITOS", creditsPanel.transform, new Vector2(0.5f, 0.72f), new Vector2(620f, 70f), 46, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
-            Text("Terminal Route\n\nDirecao, programacao e design: Grupo 4\nPrototipo tecnico: Unity 2022.3 LTS + URP\nAssets externos: bus stop pack, PSX character pack, road pack from itch.io\nArte de menu/cockpit/finais: gerada para este prototipo\nAudio: sintetizado em runtime\n\nAdicionar URLs/licencas finais em ASSET_CREDITS.md", creditsPanel.transform, new Vector2(0.5f, 0.50f), new Vector2(930f, 300f), 22, TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.80f));
+            Text("Terminal Route\n\nEquipa: Nero Soares & Paulo Monteiro\nDirecao, programacao e design: Grupo 4\nPrototipo tecnico: Unity 2022.3 LTS + URP\n\nAssets externos: Elbolilloduro / itch.io\nCharacters PSX, Bus Stop, Roads Procedural\n\nArte de menu/cockpit/finais: gerada para este prototipo\nAudio: sintetizado em runtime\nURLs e licencas: ASSET_CREDITS.md", creditsPanel.transform, new Vector2(0.5f, 0.50f), new Vector2(930f, 330f), 20, TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.80f));
             Button("VOLTAR", creditsPanel.transform, new Vector2(0.5f, 0.22f), new Vector2(220f, 54f), ShowMenu);
             Text("ESC  //  VOLTAR", creditsPanel.transform, new Vector2(0.5f, 0.15f), new Vector2(420f, 32f), 17, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
 

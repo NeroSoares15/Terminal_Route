@@ -44,6 +44,7 @@ namespace TerminalRoute.EditorTools
         {
             TerminalRouteAssetBridge.EnsureAssetLibrary();
             EnsureBuildSettings();
+            ApplyWebGLSettings();
             Directory.CreateDirectory("Builds/WebGL");
 
             var options = new BuildPlayerOptions
@@ -66,8 +67,29 @@ namespace TerminalRoute.EditorTools
             PlayerSettings.defaultScreenWidth = 1280;
             PlayerSettings.defaultScreenHeight = 720;
             PlayerSettings.fullScreenMode = FullScreenMode.Windowed;
+            ApplyWebGLSettings();
             EnsureBuildSettings();
             Debug.Log("Terminal Route MVP settings applied.");
+        }
+
+        private static void ApplyWebGLSettings()
+        {
+            EditorUserBuildSettings.SwitchActiveBuildTarget(BuildTargetGroup.WebGL, BuildTarget.WebGL);
+            EditorUserBuildSettings.development = false;
+            EditorUserBuildSettings.allowDebugging = false;
+            EditorUserBuildSettings.connectProfiler = false;
+
+            PlayerSettings.defaultWebScreenWidth = 1280;
+            PlayerSettings.defaultWebScreenHeight = 720;
+            PlayerSettings.WebGL.template = "PROJECT:TerminalRoute";
+            PlayerSettings.WebGL.compressionFormat = WebGLCompressionFormat.Gzip;
+            PlayerSettings.WebGL.decompressionFallback = true;
+            PlayerSettings.WebGL.dataCaching = true;
+            PlayerSettings.WebGL.exceptionSupport = WebGLExceptionSupport.ExplicitlyThrownExceptionsOnly;
+            PlayerSettings.WebGL.memorySize = 512;
+            PlayerSettings.WebGL.threadsSupport = false;
+            PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.WebGL, ManagedStrippingLevel.Low);
+            PlayerSettings.SetScriptingBackend(BuildTargetGroup.WebGL, ScriptingImplementation.IL2CPP);
         }
 
         private static void EnsureBuildSettings()
@@ -89,6 +111,10 @@ namespace TerminalRoute.EditorTools
             else
             {
                 Debug.LogError("Terminal Route build failed: " + report.summary.result);
+                if (Application.isBatchMode)
+                {
+                    EditorApplication.Exit(1);
+                }
             }
         }
     }

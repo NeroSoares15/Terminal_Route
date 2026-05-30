@@ -35,6 +35,15 @@ namespace TerminalRoute.Tests
         }
 
         [Test]
+        public void StopsEaseSpeedOnlyWhenBusIsNearRightSide()
+        {
+            Assert.AreEqual(1f, RouteManager.StopApproachSpeedMultiplier(40f, 75f, 2.0f));
+            Assert.AreEqual(1f, RouteManager.StopApproachSpeedMultiplier(70f, 75f, 0.5f));
+            Assert.Less(RouteManager.StopApproachSpeedMultiplier(70f, 75f, 2.0f), 1f);
+            Assert.GreaterOrEqual(RouteManager.StopApproachSpeedMultiplier(75f, 75f, 2.0f), 0.18f);
+        }
+
+        [Test]
         public void ExplicitHazardCausesResolveToLongRoute()
         {
             var state = GameState.CreateNewRun();

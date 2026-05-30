@@ -20,6 +20,12 @@ namespace TerminalRoute.Runtime
 
         private void Update()
         {
+            if (TerminalRouteInput.FullscreenPressed())
+            {
+                TerminalRouteUi.ToggleFullscreen();
+                return;
+            }
+
             if (ui.IsCreditsVisible)
             {
                 if (TerminalRouteInput.CancelPressed())

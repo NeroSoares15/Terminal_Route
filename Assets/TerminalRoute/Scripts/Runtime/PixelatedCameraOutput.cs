@@ -82,13 +82,16 @@ namespace TerminalRoute.Runtime
             rect.anchorMax = Vector2.one;
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = Vector2.zero;
+            var aspect = imageObject.AddComponent<AspectRatioFitter>();
+            aspect.aspectMode = AspectRatioFitter.AspectMode.FitInParent;
+            aspect.aspectRatio = 16f / 9f;
 
             var image = imageObject.AddComponent<RawImage>();
             image.texture = renderTexture;
             image.color = Color.white;
             image.raycastTarget = false;
 
-            Shader shader = Shader.Find("TerminalRoute/PixelatedCamera");
+            Shader shader = TerminalRouteShaderLibrary.PixelatedCamera();
             if (shader == null)
             {
                 return;

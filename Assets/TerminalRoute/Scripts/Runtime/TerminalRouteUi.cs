@@ -18,6 +18,7 @@ namespace TerminalRoute.Runtime
         private RawImage endingArtwork;
         private Material cockpitPixelMaterial;
         private Material uiPixelMaterial;
+        private Material vhsOverlayMaterial;
         private Image sanityOverlay;
         private Text clockText;
         private Text routeText;
@@ -47,7 +48,8 @@ namespace TerminalRoute.Runtime
             canvas.sortingOrder = 100;
             var scaler = canvasObject.AddComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            scaler.referenceResolution = new Vector2(1448f, 1086f);
+            scaler.referenceResolution = new Vector2(1280f, 720f);
+            scaler.matchWidthOrHeight = 0.5f;
             canvasObject.AddComponent<GraphicRaycaster>();
             EnsureEventSystem();
 
@@ -60,6 +62,7 @@ namespace TerminalRoute.Runtime
             Button("NOVA VIAGEM", menuPanel.transform, new Vector2(0.5f, 0.47f), new Vector2(300f, 58f), startRun);
             Button("CREDITOS", menuPanel.transform, new Vector2(0.5f, 0.39f), new Vector2(250f, 52f), ShowCredits);
             Button("SAIR", menuPanel.transform, new Vector2(0.5f, 0.32f), new Vector2(205f, 50f), quitGame);
+            SmallButton("TELA CHEIA", menuPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
             Text("ENTER  //  INICIAR      C  //  CREDITOS", menuPanel.transform, new Vector2(0.5f, 0.22f), new Vector2(720f, 34f), 18, TextAnchor.MiddleCenter, new Color(0.60f, 0.70f, 0.63f));
 
             hudPanel = Panel("HUD", canvasObject.transform, new Color(0f, 0f, 0f, 0f));
@@ -97,6 +100,7 @@ namespace TerminalRoute.Runtime
             endingTitleText = Text("", endingPanel.transform, new Vector2(0.5f, 0.64f), new Vector2(850f, 88f), 52, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
             endingBodyText = Text("", endingPanel.transform, new Vector2(0.5f, 0.48f), new Vector2(900f, 210f), 24, TextAnchor.MiddleCenter, new Color(0.84f, 0.84f, 0.76f));
             Button("VOLTAR AO TERMINAL", endingPanel.transform, new Vector2(0.5f, 0.34f), new Vector2(350f, 60f), endingReturn);
+            SmallButton("TELA CHEIA", endingPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
             Text("ENTER  //  VOLTAR", endingPanel.transform, new Vector2(0.5f, 0.25f), new Vector2(620f, 42f), 18, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
 
             creditsPanel = Panel("Credits", canvasObject.transform, Color.black);
@@ -105,6 +109,7 @@ namespace TerminalRoute.Runtime
             Text("CREDITOS", creditsPanel.transform, new Vector2(0.5f, 0.72f), new Vector2(620f, 70f), 46, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
             Text("Terminal Route\n\nEquipa: Nero Soares & Paulo Monteiro\nDirecao, programacao e design: Grupo 4\nPrototipo tecnico: Unity 2022.3 LTS + URP\n\nAssets externos: Elbolilloduro / itch.io\nCharacters PSX, Bus Stop, Roads Procedural\n\nArte de menu/cockpit/finais: gerada para este prototipo\nAudio: sintetizado em runtime\nURLs e licencas: ASSET_CREDITS.md", creditsPanel.transform, new Vector2(0.5f, 0.50f), new Vector2(930f, 330f), 20, TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.80f));
             Button("VOLTAR", creditsPanel.transform, new Vector2(0.5f, 0.22f), new Vector2(220f, 54f), ShowMenu);
+            SmallButton("TELA CHEIA", creditsPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
             Text("ESC  //  VOLTAR", creditsPanel.transform, new Vector2(0.5f, 0.15f), new Vector2(420f, 32f), 17, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
 
             var overlay = new GameObject("Sanity Distortion Overlay");
@@ -113,6 +118,7 @@ namespace TerminalRoute.Runtime
             sanityOverlay.color = new Color(0.55f, 0.02f, 0.04f, 0f);
             sanityOverlay.raycastTarget = false;
             Stretch(overlay.GetComponent<RectTransform>());
+            BuildVhsOverlay(canvasObject.transform);
         }
 
         public void ShowMenu()
@@ -184,6 +190,12 @@ namespace TerminalRoute.Runtime
             creditsPanel.SetActive(true);
             mirrorPanel.SetActive(false);
             SetVisualDistortion(0f);
+        }
+
+        public static void ToggleFullscreen()
+        {
+            Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
+            Screen.fullScreen = !Screen.fullScreen;
         }
 
         public void SetMirror(bool active)
@@ -358,6 +370,35 @@ namespace TerminalRoute.Runtime
             return image;
         }
 
+        private void BuildVhsOverlay(Transform parent)
+        {
+            var shader = TerminalRouteShaderLibrary.VhsOverlay();
+            if (shader == null)
+            {
+                return;
+            }
+
+            vhsOverlayMaterial = new Material(shader);
+            vhsOverlayMaterial.SetFloat("_Intensity", 0.52f);
+            vhsOverlayMaterial.SetFloat("_ScanlineAlpha", 0.055f);
+            vhsOverlayMaterial.SetFloat("_NoiseAlpha", 0.010f);
+            vhsOverlayMaterial.SetFloat("_VignetteAlpha", 0.14f);
+            vhsOverlayMaterial.SetFloat("_LineCount", 430f);
+            vhsOverlayMaterial.SetFloat("_TrackingSpeed", 0.10f);
+
+            var overlayObject = new GameObject("VHS Filter Overlay");
+            overlayObject.transform.SetParent(parent, false);
+            var rect = overlayObject.AddComponent<RectTransform>();
+            Stretch(rect);
+
+            var overlay = overlayObject.AddComponent<RawImage>();
+            overlay.texture = Texture2D.whiteTexture;
+            overlay.color = Color.white;
+            overlay.material = vhsOverlayMaterial;
+            overlay.raycastTarget = false;
+            overlayObject.transform.SetAsLastSibling();
+        }
+
         private Image HudBox(string name, Transform parent, Vector2 anchor, Vector2 size, Color color)
         {
             var boxObject = new GameObject(name);
@@ -417,6 +458,16 @@ namespace TerminalRoute.Runtime
 
         private void Button(string label, Transform parent, Vector2 anchor, Vector2 size, Action onClick)
         {
+            Button(label, parent, anchor, size, 24, onClick);
+        }
+
+        private void SmallButton(string label, Transform parent, Vector2 anchor, Vector2 size, Action onClick)
+        {
+            Button(label, parent, anchor, size, 16, onClick);
+        }
+
+        private void Button(string label, Transform parent, Vector2 anchor, Vector2 size, int fontSize, Action onClick)
+        {
             var buttonObject = new GameObject(label);
             buttonObject.transform.SetParent(parent, false);
             var rect = buttonObject.AddComponent<RectTransform>();
@@ -435,7 +486,7 @@ namespace TerminalRoute.Runtime
             colors.pressedColor = new Color(0.14f, 0.48f, 0.18f, 1f);
             button.colors = colors;
             button.onClick.AddListener(() => onClick());
-            Text(label, buttonObject.transform, new Vector2(0.5f, 0.5f), size, 24, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
+            Text(label, buttonObject.transform, new Vector2(0.5f, 0.5f), size, fontSize, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
         }
 
         private void AddOutline(Transform parent)
@@ -509,7 +560,7 @@ namespace TerminalRoute.Runtime
 
         private static Material PixelMaterial(float resolution, float scanlines, float vignette, float aberration)
         {
-            Shader shader = Shader.Find("TerminalRoute/PixelatedCamera");
+            Shader shader = TerminalRouteShaderLibrary.PixelatedCamera();
             if (shader == null)
             {
                 return null;

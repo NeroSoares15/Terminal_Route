@@ -48,6 +48,12 @@ namespace TerminalRoute.Runtime
 
         private void Update()
         {
+            if (TerminalRouteInput.FullscreenPressed())
+            {
+                TerminalRouteUi.ToggleFullscreen();
+                return;
+            }
+
             if (state.Phase == GamePhase.Ended)
             {
                 TickEndingTransition(Time.deltaTime);

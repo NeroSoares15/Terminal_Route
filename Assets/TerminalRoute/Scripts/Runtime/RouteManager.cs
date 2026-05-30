@@ -11,6 +11,8 @@ namespace TerminalRoute.Runtime
         private const float StopCaptureLead = 8f;
         private const float StopCaptureTail = 8f;
         private const float StopParkX = 2.55f;
+        private const float StopSlowdownLead = 24f;
+        private const float StopApproachMinimumSpeed = 0.18f;
 
         private float nextStopZ;
         private float stopTimer;
@@ -53,7 +55,9 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
-            TimeToNextStop = UnityEngine.Mathf.Max(0f, (nextStopZ - bus.WorldZ) / 12f);
+            bus.SetTargetSpeedMultiplier(StopApproachSpeedMultiplier(bus.WorldZ, nextStopZ, bus.LateralPosition));
+            float routeSpeed = UnityEngine.Mathf.Max(1f, bus.CurrentRouteSpeed);
+            TimeToNextStop = UnityEngine.Mathf.Max(0f, (nextStopZ - bus.WorldZ) / routeSpeed);
 
             if (HasReachedStopBoardingPoint(bus.WorldZ, nextStopZ) && IsInStopCaptureZone(bus.WorldZ, nextStopZ) && IsRightSideStop(bus.LateralPosition))
             {
@@ -70,7 +74,7 @@ namespace TerminalRoute.Runtime
 
             if (HasPassedStopMissPoint(bus.WorldZ, nextStopZ))
             {
-                MissStop(state, episodes);
+                MissStop(state, bus, episodes);
             }
         }
 
@@ -92,6 +96,29 @@ namespace TerminalRoute.Runtime
         public static bool IsRightSideStop(float lateralPosition)
         {
             return lateralPosition >= StopCaptureMinimumX;
+        }
+
+        public static float StopApproachSpeedMultiplier(float busZ, float stopZ, float lateralPosition)
+        {
+            if (!IsRightSideStop(lateralPosition))
+            {
+                return 1f;
+            }
+
+            float distance = stopZ - busZ;
+            if (distance >= StopSlowdownLead)
+            {
+                return 1f;
+            }
+
+            if (distance <= 0f)
+            {
+                return StopApproachMinimumSpeed;
+            }
+
+            float approach = 1f - UnityEngine.Mathf.Clamp01(distance / StopSlowdownLead);
+            float easedApproach = approach * approach * (3f - 2f * approach);
+            return UnityEngine.Mathf.Lerp(1f, StopApproachMinimumSpeed, easedApproach);
         }
 
         private void BeginStop(GameState state, BusController bus, TerminalRouteAudio audio, SceneFactory scene)
@@ -117,10 +144,11 @@ namespace TerminalRoute.Runtime
             nextStopIndex++;
             state.SetPhase(GamePhase.Driving);
             bus.SetPaused(false);
+            bus.SetTargetSpeedMultiplier(1f);
             episodes.BeginLoop(state.Loop);
         }
 
-        private void MissStop(GameState state, EpisodeManager episodes)
+        private void MissStop(GameState state, BusController bus, EpisodeManager episodes)
         {
             state.MissStop();
             AlertText = "PARAGEM PERDIDA  //  APROXIMA-TE DA DIREITA";
@@ -133,6 +161,7 @@ namespace TerminalRoute.Runtime
 
             nextStopZ += StopInterval;
             nextStopIndex++;
+            bus.SetTargetSpeedMultiplier(1f);
             episodes.BeginLoop(state.Loop);
         }
 

@@ -21,6 +21,11 @@ namespace TerminalRoute.Runtime
             return Input.GetKeyDown(KeyCode.F) || Input.GetMouseButtonDown(1);
         }
 
+        public static bool FullscreenPressed()
+        {
+            return Input.GetKeyDown(KeyCode.F11);
+        }
+
         public static float Steering()
         {
             float input = 0f;

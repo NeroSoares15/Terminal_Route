@@ -15,6 +15,8 @@ namespace TerminalRoute.Runtime
         private float guardrailTimer;
         private float wheelAngle;
         private float currentSpeed;
+        private float speedMultiplier;
+        private float targetSpeedMultiplier;
         private bool paused;
 
         public BusController(Transform rig, Transform steeringWheel)
@@ -65,6 +67,8 @@ namespace TerminalRoute.Runtime
             guardrailTimer = 0f;
             wheelAngle = 0f;
             currentSpeed = 12f;
+            speedMultiplier = 1f;
+            targetSpeedMultiplier = 1f;
             paused = false;
             UpdateSteeringWheel(0f, 1f);
         }
@@ -72,6 +76,17 @@ namespace TerminalRoute.Runtime
         public void SetPaused(bool paused)
         {
             this.paused = paused;
+            if (paused)
+            {
+                currentSpeed = 0f;
+                speedMultiplier = 0f;
+                targetSpeedMultiplier = 0f;
+            }
+        }
+
+        public void SetTargetSpeedMultiplier(float multiplier)
+        {
+            targetSpeedMultiplier = Mathf.Clamp01(multiplier);
         }
 
         public void SnapToStop(float lateralPosition, float worldZ)
@@ -97,7 +112,10 @@ namespace TerminalRoute.Runtime
             }
             UpdateSteeringWheel(input, deltaTime);
             float difficulty = Mathf.Clamp01((state.Loop - 1) / 4f);
-            currentSpeed = 11.6f + difficulty * 3.2f + profile.VisualDistortion * 1.8f;
+            float baseSpeed = 11.6f + difficulty * 3.2f + profile.VisualDistortion * 1.8f;
+            float speedChangeRate = targetSpeedMultiplier < speedMultiplier ? 1.35f : 0.72f;
+            speedMultiplier = Mathf.MoveTowards(speedMultiplier, targetSpeedMultiplier, speedChangeRate * deltaTime);
+            currentSpeed = baseSpeed * Mathf.Clamp(speedMultiplier, 0.08f, 1f);
             float drift = Mathf.Sin(Time.time * (1.35f + difficulty * 0.65f)) * (profile.DriftStrength * 1.65f + difficulty * 0.34f);
             float roadCrown = -rig.position.x * (0.22f + difficulty * 0.08f);
 

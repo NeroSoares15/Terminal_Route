@@ -1,0 +1,116 @@
+html,
+body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: #000;
+}
+
+body {
+  color: #4dff58;
+  font-family: Consolas, "Courier New", monospace;
+}
+
+#page {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 50%, rgba(28, 67, 61, 0.18), rgba(0, 0, 0, 0.82) 62%),
+    #000;
+}
+
+#unity-frame {
+  position: relative;
+  width: min(100vw, calc(100vh * 16 / 9));
+  aspect-ratio: 16 / 9;
+  background: #000;
+  box-shadow: 0 0 0 1px rgba(77, 255, 88, 0.16), 0 0 36px rgba(77, 255, 88, 0.12);
+}
+
+#unity-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+#unity-loading-bar {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: #000;
+}
+
+#loading-title {
+  color: #43ff4d;
+  font-size: clamp(24px, 4vw, 54px);
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow: 0 0 12px rgba(67, 255, 77, 0.9);
+}
+
+#unity-progress-bar-empty {
+  width: min(460px, 68%);
+  height: 18px;
+  border: 1px solid rgba(67, 255, 77, 0.72);
+  background: rgba(0, 20, 8, 0.88);
+}
+
+#unity-progress-bar-full {
+  width: 0%;
+  height: 100%;
+  background: #43ff4d;
+  box-shadow: 0 0 14px rgba(67, 255, 77, 0.82);
+}
+
+#unity-fullscreen-button {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  min-width: 124px;
+  height: 34px;
+  border: 1px solid rgba(67, 255, 77, 0.55);
+  background: rgba(0, 23, 9, 0.76);
+  color: #43ff4d;
+  font: 700 14px Consolas, "Courier New", monospace;
+  cursor: pointer;
+}
+
+#unity-fullscreen-button:hover {
+  background: rgba(22, 83, 33, 0.86);
+}
+
+#unity-warning {
+  position: absolute;
+  left: 50%;
+  top: 16px;
+  transform: translateX(-50%);
+  display: none;
+  max-width: 80%;
+  color: #fff;
+  text-align: center;
+  font: 14px Arial, sans-serif;
+}
+
+.warning-error,
+.warning-note {
+  padding: 10px 14px;
+  margin-bottom: 8px;
+}
+
+.warning-error {
+  background: #9b1010;
+}
+
+.warning-note {
+  background: #4b4200;
+}

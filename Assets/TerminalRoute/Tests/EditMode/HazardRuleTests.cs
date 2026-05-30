@@ -24,6 +24,7 @@ namespace TerminalRoute.Tests
         [Test]
         public void StopsHaveAReadableCaptureZone()
         {
+            Assert.AreEqual(124f, RouteManager.StopInterval);
             Assert.IsTrue(RouteManager.IsInStopCaptureZone(68f, 75f));
             Assert.IsTrue(RouteManager.IsInStopCaptureZone(82f, 75f));
             Assert.IsFalse(RouteManager.IsInStopCaptureZone(66f, 75f));

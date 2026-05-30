@@ -4,8 +4,8 @@ namespace TerminalRoute.Runtime
 {
     public sealed class RouteManager
     {
-        private const float FirstStopZ = 75f;
-        private const float StopInterval = 82f;
+        public const float FirstStopZ = 75f;
+        public const float StopInterval = 124f;
         private const float StopDuration = 2.6f;
         private const float StopCaptureMinimumX = 1.25f;
         private const float StopCaptureLead = 8f;

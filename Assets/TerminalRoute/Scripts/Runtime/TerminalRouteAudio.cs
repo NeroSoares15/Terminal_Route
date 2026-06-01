@@ -67,7 +67,35 @@ namespace TerminalRoute.Runtime
 
         public void PlayStopChime()
         {
-            oneShotSource.PlayOneShot(CreateToneClip("TR Stop", 260f, 0.35f, 0.20f, false), 0.75f);
+            oneShotSource.PlayOneShot(CreateToneClip("TR Stop", 320f, 0.18f, 0.17f, false), 0.70f);
+            oneShotSource.PlayOneShot(CreateToneClip("TR Brake", 92f, 0.48f, 0.16f, true), 0.55f);
+        }
+
+        public void PlayStopApproach()
+        {
+            oneShotSource.PlayOneShot(CreateToneClip("TR Stop Approach", 410f, 0.16f, 0.12f, false), 0.50f);
+        }
+
+        public void PlayMissedStop()
+        {
+            oneShotSource.PlayOneShot(CreateToneClip("TR Missed Stop", 145f, 0.55f, 0.22f, true), 0.85f);
+        }
+
+        public void PlayDoorHiss()
+        {
+            oneShotSource.PlayOneShot(CreateNoiseClip("TR Door Hiss", 0.42f, 0.18f), 0.72f);
+        }
+
+        public void PlayLightsOut()
+        {
+            oneShotSource.PlayOneShot(CreateToneClip("TR Lights Out Drop", 52f, 0.82f, 0.25f, true), 0.95f);
+            oneShotSource.PlayOneShot(CreateNoiseClip("TR Light Flicker", 0.62f, 0.12f), 0.65f);
+        }
+
+        public void PlayHazardHit()
+        {
+            oneShotSource.PlayOneShot(CreateToneClip("TR Hazard Hit", 74f, 0.24f, 0.25f, true), 0.78f);
+            oneShotSource.PlayOneShot(CreateNoiseClip("TR Loose Object", 0.20f, 0.16f), 0.45f);
         }
 
         public void PlayEpisodePulse(EpisodeType episode)
@@ -101,6 +129,27 @@ namespace TerminalRoute.Runtime
 
                 float envelope = Mathf.Clamp01(1f - (i / (float)samples) * (rough ? 0.12f : 1f));
                 data[i] = signal * amplitude * envelope;
+            }
+
+            var clip = AudioClip.Create(name, samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        private static AudioClip CreateNoiseClip(string name, float duration, float amplitude)
+        {
+            const int sampleRate = 22050;
+            int samples = Mathf.CeilToInt(sampleRate * duration);
+            var data = new float[samples];
+            uint state = 0xA51CEu;
+
+            for (int i = 0; i < samples; i++)
+            {
+                state = state * 1664525u + 1013904223u;
+                float noise = ((state & 0xFFFFu) / 32768f) - 1f;
+                float t = i / (float)samples;
+                float envelope = Mathf.Sin(Mathf.Clamp01(t) * Mathf.PI);
+                data[i] = noise * amplitude * envelope;
             }
 
             var clip = AudioClip.Create(name, samples, 1, sampleRate, false);

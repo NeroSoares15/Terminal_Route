@@ -17,8 +17,10 @@ namespace TerminalRoute.Runtime
         private TerminalRouteAudio audioController;
         private MirrorThreatManager mirrorThreat;
         private OncomingBusManager oncomingBuses;
+        private RoadHazardManager roadHazards;
         private bool endingShown;
         private bool endingSceneLoading;
+        private bool doorsOpen;
         private int visiblePassengerCount;
         private float elapsedRouteTime;
         private float endingSceneTimer;
@@ -32,7 +34,7 @@ namespace TerminalRoute.Runtime
             scene.Build();
 
             ui = new TerminalRouteUi();
-            ui.Build(StartRun, ReturnToMenu, ReturnToMenu);
+            ui.Build(StartRun, ReturnToMenu, ReturnToMenu, ToggleDoors);
 
             bus = new BusController(scene.Rig, scene.SteeringWheel);
             mirror = new MirrorView(scene.MainCamera.transform, ui);
@@ -42,6 +44,7 @@ namespace TerminalRoute.Runtime
             audioController = new TerminalRouteAudio(gameObject);
             mirrorThreat = new MirrorThreatManager(mirror, scene.BuildCloseMirrorThreat(), audioController);
             oncomingBuses = new OncomingBusManager(scene);
+            roadHazards = new RoadHazardManager();
 
             StartRun();
         }
@@ -67,20 +70,28 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
+            if (TerminalRouteInput.DoorPressed())
+            {
+                ToggleDoors();
+            }
+
             float deltaTime = Time.deltaTime;
             elapsedRouteTime += deltaTime;
+            GamePhase phaseBeforeRoute = state.Phase;
             mirror.Tick(deltaTime);
             scene.SetMirrorMode(mirror.IsActive);
             mirrorThreat.Tick(deltaTime, state);
             bus.Tick(deltaTime, state, episodes.InputsInverted);
             route.Tick(deltaTime, state, bus, episodes, audioController, scene);
+            SyncDoorStateAfterRouteTick(phaseBeforeRoute);
             scene.TickStopBoarding(deltaTime);
             oncomingBuses.Tick(deltaTime, state, bus);
+            roadHazards.Tick(deltaTime, state, bus, audioController);
             SyncPassengerVisuals();
             episodes.Tick(deltaTime, state, mirror, audioController);
-            visual.Tick(deltaTime, state, mirror.IsActive);
+            visual.Tick(deltaTime, state, mirror.IsActive, episodes.LightsOutAmount);
             audioController.UpdateRunAudio(state, bus.DisplaySpeed, mirror.IsActive);
-            ui.UpdateHud(state, route.TimeToNextStop, bus.DisplaySpeed, mirror.IsActive, episodes.ActiveEpisode, bus.RoadDanger, bus.SteeringVisual, route.AlertText, mirrorThreat.WarningText);
+            ui.UpdateHud(state, route.TimeToNextStop, bus.DisplaySpeed, mirror.IsActive, episodes.ActiveEpisode, bus.RoadDanger, bus.SteeringVisual, PriorityRouteAlert(), mirrorThreat.WarningText, doorsOpen);
         }
 
         private void StartRun()
@@ -91,6 +102,7 @@ namespace TerminalRoute.Runtime
             visiblePassengerCount = state.PassengerCount;
             elapsedRouteTime = 0f;
             endingSceneTimer = 0f;
+            doorsOpen = false;
 
             scene.SetPlayObjectsVisible(true);
             scene.ResetDynamicObjects(state.PassengerCount);
@@ -102,10 +114,41 @@ namespace TerminalRoute.Runtime
             episodes.BeginLoop(state.Loop);
             route.Reset();
             oncomingBuses.Reset();
+            roadHazards.Reset();
             visual.Reset();
+            scene.SetDoorsOpen(doorsOpen);
             audioController.PlayRunLoop();
             ui.ShowHud();
-            ui.UpdateHud(state, route.TimeToNextStop, bus.DisplaySpeed, false, episodes.ActiveEpisode, 0f, 0f, "", "");
+            ui.UpdateHud(state, route.TimeToNextStop, bus.DisplaySpeed, false, episodes.ActiveEpisode, 0f, 0f, "", "", doorsOpen);
+        }
+
+        private void ToggleDoors()
+        {
+            SetDoorsOpen(!doorsOpen);
+        }
+
+        private void SetDoorsOpen(bool open)
+        {
+            if (doorsOpen == open)
+            {
+                return;
+            }
+
+            doorsOpen = open;
+            scene.SetDoorsOpen(open);
+            audioController.PlayDoorHiss();
+        }
+
+        private void SyncDoorStateAfterRouteTick(GamePhase phaseBeforeRoute)
+        {
+            if (phaseBeforeRoute != GamePhase.Stopped && state.Phase == GamePhase.Stopped)
+            {
+                SetDoorsOpen(true);
+            }
+            else if (phaseBeforeRoute == GamePhase.Stopped && state.Phase == GamePhase.Driving)
+            {
+                SetDoorsOpen(false);
+            }
         }
 
         private void SyncPassengerVisuals()
@@ -130,8 +173,14 @@ namespace TerminalRoute.Runtime
             bus.SetPaused(true);
             mirror.Reset();
             TerminalRouteSession.FinishRun(state, elapsedRouteTime);
-            ui.ShowEnding(state.Ending, state.EndingCause, state.StopsReached, state.MissedStops, state.Sanity, elapsedRouteTime);
-            endingSceneTimer = 1.8f;
+            ui.ShowRouteEndFlash(state.Ending, state.EndingCause);
+            audioController.PlayEndingTone();
+            endingSceneTimer = 2.1f;
+        }
+
+        private string PriorityRouteAlert()
+        {
+            return !string.IsNullOrEmpty(roadHazards.WarningText) ? roadHazards.WarningText : route.AlertText;
         }
 
         private void TickEndingTransition(float deltaTime)

@@ -6,6 +6,7 @@ namespace TerminalRoute.Core
         Silence,
         Monkey,
         Ball,
-        InvertedControls
+        InvertedControls,
+        LightsOut
     }
 }

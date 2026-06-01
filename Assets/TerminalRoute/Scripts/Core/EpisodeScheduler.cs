@@ -13,6 +13,9 @@ namespace TerminalRoute.Core
                 case 4:
                     return EpisodeType.Ball;
                 case 5:
+                    return EpisodeType.InvertedControls;
+                case 6:
+                    return EpisodeType.LightsOut;
                 case 7:
                     return EpisodeType.InvertedControls;
                 default:
@@ -32,6 +35,8 @@ namespace TerminalRoute.Core
                     return -5f;
                 case EpisodeType.InvertedControls:
                     return -8f;
+                case EpisodeType.LightsOut:
+                    return -12f;
                 default:
                     return 0f;
             }

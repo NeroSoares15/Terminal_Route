@@ -26,6 +26,11 @@ namespace TerminalRoute.Runtime
             return Input.GetKeyDown(KeyCode.F11);
         }
 
+        public static bool DoorPressed()
+        {
+            return Input.GetKeyDown(KeyCode.E);
+        }
+
         public static float Steering()
         {
             float input = 0f;

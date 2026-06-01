@@ -6,20 +6,31 @@ using UnityEngine.UI;
 
 namespace TerminalRoute.Runtime
 {
+    public enum TerminalRouteLanguage
+    {
+        Portuguese,
+        English
+    }
+
     public sealed class TerminalRouteUi
     {
+        private static TerminalRouteLanguage language = TerminalRouteLanguage.Portuguese;
+
         private Font font;
         private GameObject menuPanel;
         private GameObject hudPanel;
         private GameObject endingPanel;
         private GameObject creditsPanel;
+        private GameObject controlsPanel;
         private GameObject mirrorPanel;
+        private GameObject routeEndFlashPanel;
         private RawImage cockpitOverlay;
         private RawImage endingArtwork;
         private Material cockpitPixelMaterial;
         private Material uiPixelMaterial;
         private Material vhsOverlayMaterial;
         private Image sanityOverlay;
+        private Image lightsOutOverlay;
         private Text clockText;
         private Text routeText;
         private Text passengerText;
@@ -29,15 +40,44 @@ namespace TerminalRoute.Runtime
         private Image eventBacking;
         private Text endingTitleText;
         private Text endingBodyText;
+        private Text menuSubtitleText;
+        private Text menuStartText;
+        private Text menuControlsText;
+        private Text menuCreditsText;
+        private Text menuQuitText;
+        private Text menuFullscreenText;
+        private Text menuLanguageText;
+        private Text menuShortcutText;
+        private Text doorButtonText;
+        private Text mirrorLabelText;
+        private Text endingReturnText;
+        private Text endingShortcutText;
+        private Text creditsTitleText;
+        private Text creditsBodyText;
+        private Text creditsReturnText;
+        private Text creditsShortcutText;
+        private Text controlsTitleText;
+        private Text controlsBodyText;
+        private Text controlsReturnText;
+        private Text controlsShortcutText;
+        private Text routeEndFlashText;
         private RectTransform wheelSpokeA;
         private RectTransform wheelSpokeB;
+        private bool lastDoorOpen;
+        private EndingId lastFlashEnding = EndingId.None;
+        private EndingCause lastFlashCause = EndingCause.None;
 
         public void Build(Action startRun, Action quitGame)
         {
-            Build(startRun, quitGame, startRun);
+            Build(startRun, quitGame, startRun, null);
         }
 
         public void Build(Action startRun, Action quitGame, Action endingReturn)
+        {
+            Build(startRun, quitGame, endingReturn, null);
+        }
+
+        public void Build(Action startRun, Action quitGame, Action endingReturn, Action toggleDoors)
         {
             font = Font.CreateDynamicFontFromOSFont("Consolas", 18);
             uiPixelMaterial = PixelMaterial(210, 0.04f, 0.08f, 0.0007f);
@@ -58,12 +98,14 @@ namespace TerminalRoute.Runtime
             Panel("Menu Shade", menuPanel.transform, new Color(0f, 0f, 0f, 0.30f));
             HudBox("Title Sign Backing", menuPanel.transform, new Vector2(0.50f, 0.78f), new Vector2(660f, 118f), new Color(0.025f, 0.035f, 0.03f, 0.72f));
             BuildMenuTitle(menuPanel.transform);
-            Text("Mantem o autocarro na estrada. Chega a tempo.", menuPanel.transform, new Vector2(0.5f, 0.62f), new Vector2(850f, 45f), 23, TextAnchor.MiddleCenter, new Color(0.83f, 0.88f, 0.82f));
-            Button("NOVA VIAGEM", menuPanel.transform, new Vector2(0.5f, 0.47f), new Vector2(300f, 58f), startRun);
-            Button("CREDITOS", menuPanel.transform, new Vector2(0.5f, 0.39f), new Vector2(250f, 52f), ShowCredits);
-            Button("SAIR", menuPanel.transform, new Vector2(0.5f, 0.32f), new Vector2(205f, 50f), quitGame);
-            SmallButton("TELA CHEIA", menuPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
-            Text("ENTER  //  INICIAR      C  //  CREDITOS", menuPanel.transform, new Vector2(0.5f, 0.22f), new Vector2(720f, 34f), 18, TextAnchor.MiddleCenter, new Color(0.60f, 0.70f, 0.63f));
+            menuSubtitleText = Text("", menuPanel.transform, new Vector2(0.5f, 0.62f), new Vector2(850f, 45f), 23, TextAnchor.MiddleCenter, new Color(0.83f, 0.88f, 0.82f));
+            menuStartText = Button("", menuPanel.transform, new Vector2(0.5f, 0.48f), new Vector2(300f, 58f), startRun);
+            menuControlsText = Button("", menuPanel.transform, new Vector2(0.5f, 0.40f), new Vector2(265f, 52f), ShowControls);
+            menuCreditsText = Button("", menuPanel.transform, new Vector2(0.5f, 0.32f), new Vector2(250f, 52f), ShowCredits);
+            menuQuitText = Button("", menuPanel.transform, new Vector2(0.5f, 0.25f), new Vector2(205f, 50f), quitGame);
+            menuLanguageText = SmallButton("", menuPanel.transform, new Vector2(0.12f, 0.08f), new Vector2(180f, 34f), ToggleLanguage);
+            menuFullscreenText = SmallButton("", menuPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
+            menuShortcutText = Text("", menuPanel.transform, new Vector2(0.5f, 0.16f), new Vector2(780f, 34f), 18, TextAnchor.MiddleCenter, new Color(0.60f, 0.70f, 0.63f));
 
             hudPanel = Panel("HUD", canvasObject.transform, new Color(0f, 0f, 0f, 0f));
             cockpitOverlay = TextureLayer("Cockpit Artwork", hudPanel.transform, "TerminalRoute/Art/CockpitOverlay");
@@ -87,11 +129,15 @@ namespace TerminalRoute.Runtime
             eventText = Text("", hudPanel.transform, new Vector2(0.5f, 0.84f), new Vector2(535f, 34f), 19, TextAnchor.MiddleCenter, new Color(1.00f, 0.60f, 0.16f));
             speedText = Text("42", hudPanel.transform, new Vector2(0.91f, 0.08f), new Vector2(135f, 34f), 21, TextAnchor.MiddleRight, new Color(0.98f, 0.62f, 0.18f));
             promptText = Text("A/D  DIRECAO    F  ESPELHO", hudPanel.transform, new Vector2(0.5f, 0.06f), new Vector2(390f, 28f), 15, TextAnchor.MiddleCenter, new Color(0.54f, 1.00f, 0.54f));
+            if (toggleDoors != null)
+            {
+                doorButtonText = SmallButton("", hudPanel.transform, new Vector2(0.12f, 0.08f), new Vector2(180f, 34f), toggleDoors);
+            }
 
             mirrorPanel = Panel("Mirror Overlay", canvasObject.transform, new Color(0f, 0f, 0f, 0f));
             AddOutline(mirrorPanel.transform);
             HudBox("Mirror Label Backing", mirrorPanel.transform, new Vector2(0.5f, 0.91f), new Vector2(230f, 28f), new Color(0.01f, 0.04f, 0.02f, 0.46f));
-            Text("ESPELHO", mirrorPanel.transform, new Vector2(0.5f, 0.91f), new Vector2(220f, 26f), 15, TextAnchor.MiddleCenter, new Color(0.34f, 1.00f, 0.40f));
+            mirrorLabelText = Text("", mirrorPanel.transform, new Vector2(0.5f, 0.91f), new Vector2(220f, 26f), 15, TextAnchor.MiddleCenter, new Color(0.34f, 1.00f, 0.40f));
 
             endingPanel = Panel("Ending", canvasObject.transform, Color.black);
             endingArtwork = TextureLayer("Ending Artwork", endingPanel.transform, "TerminalRoute/Art/EndingLong");
@@ -99,18 +145,25 @@ namespace TerminalRoute.Runtime
             HudBox("Result Backing", endingPanel.transform, new Vector2(0.5f, 0.50f), new Vector2(780f, 360f), new Color(0.01f, 0.03f, 0.02f, 0.72f));
             endingTitleText = Text("", endingPanel.transform, new Vector2(0.5f, 0.64f), new Vector2(850f, 88f), 52, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
             endingBodyText = Text("", endingPanel.transform, new Vector2(0.5f, 0.48f), new Vector2(900f, 210f), 24, TextAnchor.MiddleCenter, new Color(0.84f, 0.84f, 0.76f));
-            Button("VOLTAR AO TERMINAL", endingPanel.transform, new Vector2(0.5f, 0.34f), new Vector2(350f, 60f), endingReturn);
-            SmallButton("TELA CHEIA", endingPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
-            Text("ENTER  //  VOLTAR", endingPanel.transform, new Vector2(0.5f, 0.25f), new Vector2(620f, 42f), 18, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
+            endingReturnText = Button("", endingPanel.transform, new Vector2(0.5f, 0.34f), new Vector2(350f, 60f), endingReturn);
+            endingShortcutText = Text("", endingPanel.transform, new Vector2(0.5f, 0.25f), new Vector2(620f, 42f), 18, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
 
             creditsPanel = Panel("Credits", canvasObject.transform, Color.black);
             TextureLayer("Credits Artwork", creditsPanel.transform, "TerminalRoute/Art/MenuBackground");
             Panel("Credits Shade", creditsPanel.transform, new Color(0f, 0f, 0f, 0.78f));
-            Text("CREDITOS", creditsPanel.transform, new Vector2(0.5f, 0.72f), new Vector2(620f, 70f), 46, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
-            Text("Terminal Route\n\nEquipa: Nero Soares & Paulo Monteiro\nDirecao, programacao e design: Grupo 4\nPrototipo tecnico: Unity 2022.3 LTS + URP\n\nAssets externos: Elbolilloduro / itch.io\nCharacters PSX, Bus Stop, Roads Procedural\n\nArte de menu/cockpit/finais: gerada para este prototipo\nAudio: sintetizado em runtime\nURLs e licencas: ASSET_CREDITS.md", creditsPanel.transform, new Vector2(0.5f, 0.50f), new Vector2(930f, 330f), 20, TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.80f));
-            Button("VOLTAR", creditsPanel.transform, new Vector2(0.5f, 0.22f), new Vector2(220f, 54f), ShowMenu);
-            SmallButton("TELA CHEIA", creditsPanel.transform, new Vector2(0.88f, 0.08f), new Vector2(170f, 34f), ToggleFullscreen);
-            Text("ESC  //  VOLTAR", creditsPanel.transform, new Vector2(0.5f, 0.15f), new Vector2(420f, 32f), 17, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
+            creditsTitleText = Text("", creditsPanel.transform, new Vector2(0.5f, 0.72f), new Vector2(620f, 70f), 46, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
+            creditsBodyText = Text("", creditsPanel.transform, new Vector2(0.5f, 0.50f), new Vector2(930f, 330f), 20, TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.80f));
+            creditsReturnText = Button("", creditsPanel.transform, new Vector2(0.5f, 0.22f), new Vector2(220f, 54f), ShowMenu);
+            creditsShortcutText = Text("", creditsPanel.transform, new Vector2(0.5f, 0.15f), new Vector2(420f, 32f), 17, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
+
+            controlsPanel = Panel("Controls", canvasObject.transform, Color.black);
+            TextureLayer("Controls Artwork", controlsPanel.transform, "TerminalRoute/Art/MenuBackground");
+            Panel("Controls Shade", controlsPanel.transform, new Color(0f, 0f, 0f, 0.82f));
+            HudBox("Controls Backing", controlsPanel.transform, new Vector2(0.5f, 0.52f), new Vector2(780f, 420f), new Color(0.01f, 0.03f, 0.02f, 0.72f));
+            controlsTitleText = Text("", controlsPanel.transform, new Vector2(0.5f, 0.72f), new Vector2(620f, 70f), 44, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
+            controlsBodyText = Text("", controlsPanel.transform, new Vector2(0.5f, 0.51f), new Vector2(820f, 260f), 24, TextAnchor.MiddleCenter, new Color(0.82f, 0.88f, 0.80f));
+            controlsReturnText = Button("", controlsPanel.transform, new Vector2(0.5f, 0.25f), new Vector2(220f, 54f), ShowMenu);
+            controlsShortcutText = Text("", controlsPanel.transform, new Vector2(0.5f, 0.18f), new Vector2(420f, 32f), 17, TextAnchor.MiddleCenter, new Color(0.55f, 0.62f, 0.58f));
 
             var overlay = new GameObject("Sanity Distortion Overlay");
             overlay.transform.SetParent(canvasObject.transform, false);
@@ -118,7 +171,16 @@ namespace TerminalRoute.Runtime
             sanityOverlay.color = new Color(0.55f, 0.02f, 0.04f, 0f);
             sanityOverlay.raycastTarget = false;
             Stretch(overlay.GetComponent<RectTransform>());
+            var blackout = new GameObject("Lights Out Overlay");
+            blackout.transform.SetParent(canvasObject.transform, false);
+            lightsOutOverlay = blackout.AddComponent<Image>();
+            lightsOutOverlay.color = new Color(0f, 0f, 0f, 0f);
+            lightsOutOverlay.raycastTarget = false;
+            Stretch(blackout.GetComponent<RectTransform>());
+            routeEndFlashPanel = Panel("Route End Flash", canvasObject.transform, new Color(0f, 0f, 0f, 0.88f));
+            routeEndFlashText = Text("", routeEndFlashPanel.transform, new Vector2(0.5f, 0.52f), new Vector2(980f, 220f), 46, TextAnchor.MiddleCenter, new Color(0.95f, 0.20f, 0.16f));
             BuildVhsOverlay(canvasObject.transform);
+            ApplyLanguage();
         }
 
         public void ShowMenu()
@@ -127,8 +189,11 @@ namespace TerminalRoute.Runtime
             hudPanel.SetActive(false);
             endingPanel.SetActive(false);
             creditsPanel.SetActive(false);
+            controlsPanel.SetActive(false);
+            routeEndFlashPanel.SetActive(false);
             mirrorPanel.SetActive(false);
             SetVisualDistortion(0f);
+            SetLightsOut(0f);
         }
 
         public void ShowHud()
@@ -137,6 +202,8 @@ namespace TerminalRoute.Runtime
             hudPanel.SetActive(true);
             endingPanel.SetActive(false);
             creditsPanel.SetActive(false);
+            controlsPanel.SetActive(false);
+            routeEndFlashPanel.SetActive(false);
             if (cockpitOverlay != null)
             {
                 cockpitOverlay.enabled = true;
@@ -150,36 +217,45 @@ namespace TerminalRoute.Runtime
 
         public void ShowEnding(EndingId ending, EndingCause cause, int stopsReached, int missedStops, float finalSanity, float elapsedTime)
         {
+            ApplyLanguage();
             menuPanel.SetActive(false);
             hudPanel.SetActive(false);
             endingPanel.SetActive(true);
             creditsPanel.SetActive(false);
+            controlsPanel.SetActive(false);
+            routeEndFlashPanel.SetActive(false);
             mirrorPanel.SetActive(false);
             SetVisualDistortion(0f);
+            SetLightsOut(0f);
 
             if (ending == EndingId.GoodTrip)
             {
                 endingArtwork.texture = Resources.Load<Texture2D>("TerminalRoute/Art/EndingGood");
-                endingTitleText.text = "BOA VIAGEM";
+                endingTitleText.text = IsEnglish ? "GOOD TRIP" : "BOA VIAGEM";
             }
             else
             {
                 endingArtwork.texture = Resources.Load<Texture2D>("TerminalRoute/Art/EndingLong");
-                endingTitleText.text = "A LONGA ROTA";
+                endingTitleText.text = IsEnglish ? "THE LONG ROUTE" : "A LONGA ROTA";
             }
 
             endingBodyText.text =
-                "RESULTADO\n" +
-                "PARAGENS: " + Mathf.Clamp(stopsReached, 0, GameState.FinalStopCount).ToString("00") + "/" + GameState.FinalStopCount.ToString("00") + "\n" +
-                "FALHAS: " + Mathf.Clamp(missedStops, 0, GameState.MaxMissedStops) + "/" + GameState.MaxMissedStops + "\n" +
-                "SANIDADE: " + Mathf.RoundToInt(finalSanity).ToString("00") + "%\n" +
-                "TEMPO: " + FormatTime(elapsedTime) + "\n" +
-                "CAUSA: " + CauseLabel(cause);
+                L("RESULTADO", "RESULT") + "\n" +
+                L("PARAGENS: ", "STOPS: ") + Mathf.Clamp(stopsReached, 0, GameState.FinalStopCount).ToString("00") + "/" + GameState.FinalStopCount.ToString("00") + "\n" +
+                L("FALHAS: ", "MISSES: ") + Mathf.Clamp(missedStops, 0, GameState.MaxMissedStops) + "/" + GameState.MaxMissedStops + "\n" +
+                L("SANIDADE: ", "SANITY: ") + Mathf.RoundToInt(finalSanity).ToString("00") + "%\n" +
+                L("TEMPO: ", "TIME: ") + FormatTime(elapsedTime) + "\n" +
+                L("CAUSA: ", "CAUSE: ") + CauseLabel(cause);
         }
 
         public bool IsCreditsVisible
         {
             get { return creditsPanel != null && creditsPanel.activeSelf; }
+        }
+
+        public bool IsControlsVisible
+        {
+            get { return controlsPanel != null && controlsPanel.activeSelf; }
         }
 
         public void ShowCredits()
@@ -188,14 +264,116 @@ namespace TerminalRoute.Runtime
             hudPanel.SetActive(false);
             endingPanel.SetActive(false);
             creditsPanel.SetActive(true);
+            controlsPanel.SetActive(false);
+            routeEndFlashPanel.SetActive(false);
             mirrorPanel.SetActive(false);
             SetVisualDistortion(0f);
+            SetLightsOut(0f);
+        }
+
+        public void ShowControls()
+        {
+            menuPanel.SetActive(false);
+            hudPanel.SetActive(false);
+            endingPanel.SetActive(false);
+            creditsPanel.SetActive(false);
+            controlsPanel.SetActive(true);
+            routeEndFlashPanel.SetActive(false);
+            mirrorPanel.SetActive(false);
+            SetVisualDistortion(0f);
+            SetLightsOut(0f);
+        }
+
+        public void ShowRouteEndFlash(EndingId ending, EndingCause cause)
+        {
+            lastFlashEnding = ending;
+            lastFlashCause = cause;
+            menuPanel.SetActive(false);
+            hudPanel.SetActive(true);
+            endingPanel.SetActive(false);
+            creditsPanel.SetActive(false);
+            controlsPanel.SetActive(false);
+            mirrorPanel.SetActive(false);
+            routeEndFlashPanel.SetActive(true);
+            routeEndFlashText.text = RouteEndFlashLabel(ending, cause);
         }
 
         public static void ToggleFullscreen()
         {
             Screen.fullScreenMode = FullScreenMode.FullScreenWindow;
             Screen.fullScreen = !Screen.fullScreen;
+        }
+
+        private void ToggleLanguage()
+        {
+            language = language == TerminalRouteLanguage.Portuguese ? TerminalRouteLanguage.English : TerminalRouteLanguage.Portuguese;
+            ApplyLanguage();
+        }
+
+        private bool IsEnglish
+        {
+            get { return language == TerminalRouteLanguage.English; }
+        }
+
+        private string L(string portuguese, string english)
+        {
+            return IsEnglish ? english : portuguese;
+        }
+
+        private void ApplyLanguage()
+        {
+            if (menuSubtitleText != null)
+            {
+                menuSubtitleText.text = L("Mantem o autocarro na estrada. Chega a tempo.", "Keep the bus on the road. Arrive on time.");
+                menuStartText.text = L("NOVA VIAGEM", "NEW TRIP");
+                menuControlsText.text = L("CONTROLOS", "CONTROLS");
+                menuCreditsText.text = L("CREDITOS", "CREDITS");
+                menuQuitText.text = L("SAIR", "EXIT");
+                menuFullscreenText.text = L("TELA CHEIA", "FULLSCREEN");
+                menuLanguageText.text = L("IDIOMA: PT", "LANGUAGE: EN");
+                menuShortcutText.text = L("ENTER  //  INICIAR      T  //  CONTROLOS      C  //  CREDITOS", "ENTER  //  START      T  //  CONTROLS      C  //  CREDITS");
+            }
+
+            if (doorButtonText != null)
+            {
+                doorButtonText.text = lastDoorOpen ? L("FECHAR PORTAS", "CLOSE DOORS") : L("ABRIR PORTAS", "OPEN DOORS");
+            }
+
+            if (mirrorLabelText != null)
+            {
+                mirrorLabelText.text = L("ESPELHO", "MIRROR");
+            }
+
+            if (endingReturnText != null)
+            {
+                endingReturnText.text = L("VOLTAR AO TERMINAL", "RETURN TO TERMINAL");
+                endingShortcutText.text = L("ENTER  //  VOLTAR", "ENTER  //  RETURN");
+            }
+
+            if (creditsTitleText != null)
+            {
+                creditsTitleText.text = L("CREDITOS", "CREDITS");
+                creditsBodyText.text = L(
+                    "Terminal Route\n\nEquipa: Nero Soares & Paulo Monteiro\nDirecao, programacao e design: Grupo 4\nPrototipo tecnico: Unity 2022.3 LTS + URP\n\nAssets externos: Elbolilloduro / itch.io\nCharacters PSX, Bus Stop, Roads Procedural\n\nArte de menu/cockpit/finais: gerada para este prototipo\nAudio: sintetizado em runtime\nURLs e licencas: ASSET_CREDITS.md",
+                    "Terminal Route\n\nTeam: Nero Soares & Paulo Monteiro\nDirection, programming and design: Group 4\nTechnical prototype: Unity 2022.3 LTS + URP\n\nExternal assets: Elbolilloduro / itch.io\nCharacters PSX, Bus Stop, Roads Procedural\n\nMenu/cockpit/ending art: generated for this prototype\nAudio: synthesized at runtime\nURLs and licenses: ASSET_CREDITS.md");
+                creditsReturnText.text = L("VOLTAR", "BACK");
+                creditsShortcutText.text = L("ESC  //  VOLTAR", "ESC  //  BACK");
+            }
+
+            if (controlsTitleText != null)
+            {
+                controlsTitleText.text = L("CONTROLOS", "CONTROLS");
+                controlsBodyText.text = L(
+                    "A / D ou setas  -  direcao\nF  -  olhar para o espelho\nE  -  abrir / fechar portas\n\nEncosta a direita quando a paragem brilhar.\nPara dentro da zona verde. Falhar duas paragens termina a viagem.\nSe alguem aparecer perto no espelho, olha para a frente.",
+                    "A / D or arrows  -  steer\nF  -  look in the mirror\nE  -  open / close doors\n\nMove right when the stop glows.\nStop inside the green zone. Missing two stops ends the trip.\nIf someone appears close in the mirror, look forward.");
+                controlsReturnText.text = L("VOLTAR", "BACK");
+                controlsShortcutText.text = L("ESC  //  VOLTAR", "ESC  //  BACK");
+            }
+
+            if (routeEndFlashPanel != null && routeEndFlashPanel.activeSelf)
+            {
+                routeEndFlashText.text = RouteEndFlashLabel(lastFlashEnding, lastFlashCause);
+            }
         }
 
         public void SetMirror(bool active)
@@ -218,20 +396,37 @@ namespace TerminalRoute.Runtime
             sanityOverlay.color = new Color(0.55f, 0.02f, 0.04f, amount * 0.24f);
         }
 
-        public void UpdateHud(GameState state, float timeToNextStop, float speed, bool mirrorActive, EpisodeType activeEpisode, float roadDanger, float steering, string routeAlert, string mirrorAlert)
+        public void SetLightsOut(float amount)
+        {
+            if (lightsOutOverlay == null)
+            {
+                return;
+            }
+
+            float flicker = Mathf.PerlinNoise(Time.time * 26f, 0.77f) * 0.10f;
+            lightsOutOverlay.color = new Color(0f, 0f, 0f, Mathf.Clamp01(amount) * (0.44f + flicker));
+        }
+
+        public void UpdateHud(GameState state, float timeToNextStop, float speed, bool mirrorActive, EpisodeType activeEpisode, float roadDanger, float steering, string routeAlert, string mirrorAlert, bool doorsOpen)
         {
             if (!hudPanel.activeSelf)
             {
                 return;
             }
 
+            lastDoorOpen = doorsOpen;
             int seconds = Mathf.CeilToInt(timeToNextStop);
             clockText.text = "00:" + seconds.ToString("00");
-            routeText.text = "ROTA 04  //  PARAGEM " + Mathf.Clamp(state.StopsReached, 0, GameState.FinalStopCount).ToString("00") + "/08  //  FALHAS " + Mathf.Clamp(state.MissedStops, 0, GameState.MaxMissedStops) + "/2";
-            passengerText.text = state.PassengerCount + " PASS.";
+            routeText.text = L("ROTA 04  //  PARAGEM ", "ROUTE 04  //  STOP ") + Mathf.Clamp(state.StopsReached, 0, GameState.FinalStopCount).ToString("00") + "/08  //  " + L("FALHAS ", "MISSES ") + Mathf.Clamp(state.MissedStops, 0, GameState.MaxMissedStops) + "/2";
+            passengerText.text = PassengerDisplayText(state, activeEpisode, mirrorActive);
             speedText.text = Mathf.RoundToInt(speed).ToString("00") + " KM/H";
-            promptText.text = mirrorActive ? "F  VOLTAR" : "A/D  DIRECAO    F  ESPELHO";
-            eventText.text = GetPriorityHudMessage(state, activeEpisode, roadDanger, routeAlert, mirrorAlert);
+            promptText.text = mirrorActive ? L("F  VOLTAR", "F  BACK") : L("A/D  DIRECAO    F  ESPELHO    E  PORTAS", "A/D  STEER    F  MIRROR    E  DOORS");
+            if (doorButtonText != null)
+            {
+                doorButtonText.text = doorsOpen ? L("FECHAR PORTAS", "CLOSE DOORS") : L("ABRIR PORTAS", "OPEN DOORS");
+            }
+
+            eventText.text = GetPriorityHudMessage(state, activeEpisode, roadDanger, routeAlert, mirrorAlert, doorsOpen);
             eventText.enabled = eventText.text.Length > 0;
             eventBacking.enabled = eventText.enabled;
             SetSteering(steering);
@@ -244,68 +439,107 @@ namespace TerminalRoute.Runtime
             wheelSpokeB.localRotation = Quaternion.Euler(0f, 0f, angle + 90f);
         }
 
-        private static string GetCabinMessage(GamePhase phase, EpisodeType activeEpisode)
+        private string GetCabinMessage(GamePhase phase, EpisodeType activeEpisode, bool doorsOpen)
         {
             if (phase == GamePhase.Stopped)
             {
-                return "PARAGEM  //  PORTAS ABERTAS";
+                return doorsOpen ? L("PARAGEM  //  PORTAS ABERTAS", "STOP  //  DOORS OPEN") : L("PARAGEM  //  PORTAS FECHADAS", "STOP  //  DOORS CLOSED");
             }
 
             switch (activeEpisode)
             {
                 case EpisodeType.Silence:
-                    return "CABINE  //  SEM RUIDO";
+                    return L("CABINE  //  SEM RUIDO", "CABIN  //  NO SOUND");
                 case EpisodeType.Monkey:
-                    return "CABINE  //  MOVIMENTO ATRAS";
+                    return L("CABINE  //  MOVIMENTO ATRAS", "CABIN  //  MOVEMENT BEHIND");
                 case EpisodeType.Ball:
-                    return "CORREDOR  //  OBJETO SOLTO";
+                    return L("CORREDOR  //  OBJETO SOLTO", "AISLE  //  LOOSE OBJECT");
                 case EpisodeType.InvertedControls:
-                    return "CABINE  //  DIRECAO INVERTIDA";
+                    return L("CABINE  //  DIRECAO INVERTIDA", "CABIN  //  STEERING INVERTED");
+                case EpisodeType.LightsOut:
+                    return L("LUZES  //  FALHA ELETRICA", "LIGHTS  //  ELECTRICAL FAULT");
                 default:
                     return "";
             }
         }
 
-        private static string GetPriorityHudMessage(GameState state, EpisodeType activeEpisode, float roadDanger, string routeAlert, string mirrorAlert)
+        private string GetPriorityHudMessage(GameState state, EpisodeType activeEpisode, float roadDanger, string routeAlert, string mirrorAlert, bool doorsOpen)
         {
             if (!string.IsNullOrEmpty(mirrorAlert))
             {
-                return mirrorAlert;
+                return L(mirrorAlert, "LOOK FRONT");
             }
 
             if (!string.IsNullOrEmpty(routeAlert))
             {
-                return routeAlert;
+                return LocalizeAlert(routeAlert);
             }
 
             if (roadDanger > 0.15f)
             {
-                return "ALERTA  //  VOLTA PARA A FAIXA";
+                return L("ALERTA  //  VOLTA PARA A FAIXA", "ALERT  //  RETURN TO LANE");
             }
 
-            return GetCabinMessage(state.Phase, activeEpisode);
+            return GetCabinMessage(state.Phase, activeEpisode, doorsOpen);
         }
 
-        private static string CauseLabel(EndingCause cause)
+        private string LocalizeAlert(string alert)
+        {
+            if (!IsEnglish)
+            {
+                return alert;
+            }
+
+            switch (alert)
+            {
+                case "APROXIMA-TE DA DIREITA":
+                    return "MOVE TO THE RIGHT";
+                case "APROXIMA-TE DA PARAGEM":
+                    return "APPROACH THE STOP";
+                case "ENCOSTA A DIREITA PARA PARAR":
+                    return "MOVE RIGHT TO STOP";
+                case "PARAGEM PERDIDA  //  APROXIMA-TE DA DIREITA":
+                    return "STOP MISSED  //  MOVE TO THE RIGHT";
+                case "OBJETO NA ESTRADA":
+                    return "OBJECT ON ROAD";
+                default:
+                    return alert;
+            }
+        }
+
+        private string PassengerDisplayText(GameState state, EpisodeType activeEpisode, bool mirrorActive)
+        {
+            int count = state.PassengerCount;
+            bool wrongCount = activeEpisode == EpisodeType.LightsOut || (activeEpisode == EpisodeType.Silence && mirrorActive) || (activeEpisode == EpisodeType.Monkey && mirrorActive);
+            if (wrongCount)
+            {
+                count = Mathf.Max(0, count + 2 + (state.Loop % 4));
+                return count + " PASS.?";
+            }
+
+            return count + " PASS.";
+        }
+
+        private string CauseLabel(EndingCause cause)
         {
             switch (cause)
             {
                 case EndingCause.CompletedRoute:
-                    return "ROTA COMPLETA";
+                    return L("ROTA COMPLETA", "ROUTE COMPLETE");
                 case EndingCause.SanityZero:
-                    return "SANIDADE ZERO";
+                    return L("SANIDADE ZERO", "SANITY ZERO");
                 case EndingCause.RoadCrash:
-                    return "SAISTE DA ESTRADA";
+                    return L("SAISTE DA ESTRADA", "LEFT THE ROAD");
                 case EndingCause.MissedStops:
-                    return "DUAS PARAGENS PERDIDAS";
+                    return L("DUAS PARAGENS PERDIDAS", "TWO MISSED STOPS");
                 case EndingCause.OncomingBusCrash:
-                    return "COLISAO COM AUTOCARRO";
+                    return L("COLISAO COM AUTOCARRO", "BUS COLLISION");
                 case EndingCause.CloseNpcStare:
-                    return "OLHASTE DEMASIADO";
+                    return L("OLHASTE DEMASIADO", "LOOKED TOO LONG");
                 case EndingCause.ManualExit:
-                    return "VIAGEM INTERROMPIDA";
+                    return L("VIAGEM INTERROMPIDA", "TRIP INTERRUPTED");
                 default:
-                    return "DESCONHECIDA";
+                    return L("DESCONHECIDA", "UNKNOWN");
             }
         }
 
@@ -313,6 +547,30 @@ namespace TerminalRoute.Runtime
         {
             int wholeSeconds = Mathf.Max(0, Mathf.RoundToInt(seconds));
             return (wholeSeconds / 60).ToString("00") + ":" + (wholeSeconds % 60).ToString("00");
+        }
+
+        private string RouteEndFlashLabel(EndingId ending, EndingCause cause)
+        {
+            if (ending == EndingId.GoodTrip)
+            {
+                return L("CHEGASTE AO FIM DA ROTA", "YOU REACHED THE END OF THE ROUTE");
+            }
+
+            switch (cause)
+            {
+                case EndingCause.MissedStops:
+                    return L("PERDESTE DUAS PARAGENS", "YOU MISSED TWO STOPS");
+                case EndingCause.CloseNpcStare:
+                    return L("OLHASTE TEMPO DEMAIS", "YOU LOOKED TOO LONG");
+                case EndingCause.OncomingBusCrash:
+                    return L("COLISAO NA FAIXA CONTRARIA", "COLLISION IN THE WRONG LANE");
+                case EndingCause.RoadCrash:
+                    return L("SAISTE DA ESTRADA", "YOU LEFT THE ROAD");
+                case EndingCause.SanityZero:
+                    return L("A ROTA ENTROU EM TI", "THE ROUTE GOT INSIDE YOU");
+                default:
+                    return L("A VIAGEM TERMINOU", "THE TRIP ENDED");
+            }
         }
 
         private void BuildMenuTitle(Transform parent)
@@ -456,17 +714,17 @@ namespace TerminalRoute.Runtime
             return rect;
         }
 
-        private void Button(string label, Transform parent, Vector2 anchor, Vector2 size, Action onClick)
+        private Text Button(string label, Transform parent, Vector2 anchor, Vector2 size, Action onClick)
         {
-            Button(label, parent, anchor, size, 24, onClick);
+            return Button(label, parent, anchor, size, 24, onClick);
         }
 
-        private void SmallButton(string label, Transform parent, Vector2 anchor, Vector2 size, Action onClick)
+        private Text SmallButton(string label, Transform parent, Vector2 anchor, Vector2 size, Action onClick)
         {
-            Button(label, parent, anchor, size, 16, onClick);
+            return Button(label, parent, anchor, size, 16, onClick);
         }
 
-        private void Button(string label, Transform parent, Vector2 anchor, Vector2 size, int fontSize, Action onClick)
+        private Text Button(string label, Transform parent, Vector2 anchor, Vector2 size, int fontSize, Action onClick)
         {
             var buttonObject = new GameObject(label);
             buttonObject.transform.SetParent(parent, false);
@@ -486,7 +744,7 @@ namespace TerminalRoute.Runtime
             colors.pressedColor = new Color(0.14f, 0.48f, 0.18f, 1f);
             button.colors = colors;
             button.onClick.AddListener(() => onClick());
-            Text(label, buttonObject.transform, new Vector2(0.5f, 0.5f), size, fontSize, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
+            return Text(label, buttonObject.transform, new Vector2(0.5f, 0.5f), size, fontSize, TextAnchor.MiddleCenter, new Color(0.30f, 0.95f, 0.30f));
         }
 
         private void AddOutline(Transform parent)

@@ -18,6 +18,7 @@ namespace TerminalRoute.Runtime
         private float stopTimer;
         private float alertTimer;
         private int nextStopIndex;
+        private bool approachCuePlayed;
 
         public float TimeToNextStop { get; private set; }
         public string AlertText { get; private set; }
@@ -31,6 +32,7 @@ namespace TerminalRoute.Runtime
             alertTimer = 0f;
             AlertText = "";
             nextStopIndex = 0;
+            approachCuePlayed = false;
         }
 
         public void Tick(float deltaTime, GameState state, BusController bus, EpisodeManager episodes, TerminalRouteAudio audio, SceneFactory scene)
@@ -58,6 +60,7 @@ namespace TerminalRoute.Runtime
             bus.SetTargetSpeedMultiplier(StopApproachSpeedMultiplier(bus.WorldZ, nextStopZ, bus.LateralPosition));
             float routeSpeed = UnityEngine.Mathf.Max(1f, bus.CurrentRouteSpeed);
             TimeToNextStop = UnityEngine.Mathf.Max(0f, (nextStopZ - bus.WorldZ) / routeSpeed);
+            TickStopGuidance(bus, audio);
 
             if (HasReachedStopBoardingPoint(bus.WorldZ, nextStopZ) && IsInStopCaptureZone(bus.WorldZ, nextStopZ) && IsRightSideStop(bus.LateralPosition))
             {
@@ -74,7 +77,7 @@ namespace TerminalRoute.Runtime
 
             if (HasPassedStopMissPoint(bus.WorldZ, nextStopZ))
             {
-                MissStop(state, bus, episodes);
+                MissStop(state, bus, episodes, audio);
             }
         }
 
@@ -142,17 +145,19 @@ namespace TerminalRoute.Runtime
 
             nextStopZ += StopInterval;
             nextStopIndex++;
+            approachCuePlayed = false;
             state.SetPhase(GamePhase.Driving);
             bus.SetPaused(false);
             bus.SetTargetSpeedMultiplier(1f);
             episodes.BeginLoop(state.Loop);
         }
 
-        private void MissStop(GameState state, BusController bus, EpisodeManager episodes)
+        private void MissStop(GameState state, BusController bus, EpisodeManager episodes, TerminalRouteAudio audio)
         {
             state.MissStop();
             AlertText = "PARAGEM PERDIDA  //  APROXIMA-TE DA DIREITA";
             alertTimer = 2.8f;
+            audio.PlayMissedStop();
 
             if (state.Phase == GamePhase.Ended)
             {
@@ -161,8 +166,25 @@ namespace TerminalRoute.Runtime
 
             nextStopZ += StopInterval;
             nextStopIndex++;
+            approachCuePlayed = false;
             bus.SetTargetSpeedMultiplier(1f);
             episodes.BeginLoop(state.Loop);
+        }
+
+        private void TickStopGuidance(BusController bus, TerminalRouteAudio audio)
+        {
+            float distance = nextStopZ - bus.WorldZ;
+            if (distance > 0f && distance < 36f)
+            {
+                if (!approachCuePlayed)
+                {
+                    audio.PlayStopApproach();
+                    approachCuePlayed = true;
+                }
+
+                AlertText = IsRightSideStop(bus.LateralPosition) ? "APROXIMA-TE DA PARAGEM" : "ENCOSTA A DIREITA PARA PARAR";
+                alertTimer = 0.24f;
+            }
         }
 
         private void TickAlert(float deltaTime)

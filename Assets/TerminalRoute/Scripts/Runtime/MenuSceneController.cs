@@ -26,7 +26,7 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
-            if (ui.IsCreditsVisible)
+            if (ui.IsCreditsVisible || ui.IsControlsVisible)
             {
                 if (TerminalRouteInput.CancelPressed())
                 {
@@ -39,6 +39,12 @@ namespace TerminalRoute.Runtime
             if (Input.GetKeyDown(KeyCode.C))
             {
                 ui.ShowCredits();
+                return;
+            }
+
+            if (Input.GetKeyDown(KeyCode.T))
+            {
+                ui.ShowControls();
                 return;
             }
 

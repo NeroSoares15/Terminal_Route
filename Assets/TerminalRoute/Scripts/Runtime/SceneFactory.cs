@@ -79,6 +79,8 @@ namespace TerminalRoute.Runtime
         public GameObject Monkey { get; private set; }
         public GameObject Ball { get; private set; }
         public Transform SteeringWheel { get; private set; }
+        private Transform frontDoorPanel;
+        private Transform rearDoorPanel;
 
         public void Build()
         {
@@ -137,6 +139,7 @@ namespace TerminalRoute.Runtime
             Ball.transform.localPosition = ballStart;
             Ball.SetActive(false);
             ResetStopBoardingPassengers();
+            SetDoorsOpen(false);
         }
 
         public void SetPassengerCount(int passengerCount)
@@ -158,6 +161,19 @@ namespace TerminalRoute.Runtime
         public void SetBallProgress(float progress)
         {
             Ball.transform.localPosition = Vector3.Lerp(ballStart, new Vector3(0f, 0.25f, -1.15f), Mathf.Clamp01(progress));
+        }
+
+        public void SetDoorsOpen(bool open)
+        {
+            if (frontDoorPanel == null || rearDoorPanel == null)
+            {
+                return;
+            }
+
+            frontDoorPanel.localPosition = open ? new Vector3(1.78f, 1.16f, 0.58f) : new Vector3(1.53f, 1.16f, 0.36f);
+            rearDoorPanel.localPosition = open ? new Vector3(1.78f, 1.16f, -0.05f) : new Vector3(1.53f, 1.16f, -0.24f);
+            frontDoorPanel.localRotation = Quaternion.Euler(0f, open ? -18f : 0f, 0f);
+            rearDoorPanel.localRotation = Quaternion.Euler(0f, open ? 18f : 0f, 0f);
         }
 
         public void BeginStopBoarding(int stopIndex, float duration)
@@ -244,20 +260,25 @@ namespace TerminalRoute.Runtime
         {
             var root = new GameObject("Close Mirror NPC");
             root.transform.SetParent(CameraTransform, false);
-            root.transform.localPosition = new Vector3(0f, -1.04f, 0.62f);
+            root.transform.localPosition = new Vector3(0f, 0f, 0.54f);
             root.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
             root.transform.localScale = Vector3.one;
 
             GameObject prefab = closeThreatPrefabs.Length == 0 ? null : closeThreatPrefabs[0];
-            if (!BuildWorldCharacterModel("Close Mirror Character", root.transform, prefab, 2.22f, true))
+            var modelAnchor = new GameObject("Close Mirror Character Anchor").transform;
+            modelAnchor.SetParent(root.transform, false);
+            modelAnchor.localPosition = new Vector3(0f, -1.72f, 0f);
+            modelAnchor.localRotation = Quaternion.identity;
+
+            if (!BuildWorldCharacterModel("Close Mirror Character", modelAnchor, prefab, 2.05f, true))
             {
                 Material faceMaterial = Material("TR Close Face", new Color(0.56f, 0.55f, 0.49f));
                 Material mouthMaterial = Material("TR Close Mouth", new Color(0.03f, 0.02f, 0.02f));
-                Sphere("Close Head", root.transform, new Vector3(0f, 1.26f, 0f), new Vector3(0.92f, 1.04f, 0.52f), faceMaterial);
-                Cube("Close Left Eye", root.transform, new Vector3(-0.22f, 1.36f, 0.42f), new Vector3(0.15f, 0.08f, 0.035f), greenMaterial);
-                Cube("Close Right Eye", root.transform, new Vector3(0.22f, 1.36f, 0.42f), new Vector3(0.15f, 0.08f, 0.035f), greenMaterial);
-                Cube("Close Mouth", root.transform, new Vector3(0f, 1.08f, 0.45f), new Vector3(0.38f, 0.11f, 0.04f), mouthMaterial);
-                Cube("Close Shoulder", root.transform, new Vector3(0f, 0.52f, 0.04f), new Vector3(1.32f, 0.54f, 0.42f), clothMaterial);
+                Sphere("Close Head", root.transform, new Vector3(0f, 0.02f, 0f), new Vector3(0.82f, 0.94f, 0.48f), faceMaterial);
+                Cube("Close Left Eye", root.transform, new Vector3(-0.20f, 0.11f, 0.39f), new Vector3(0.14f, 0.075f, 0.035f), greenMaterial);
+                Cube("Close Right Eye", root.transform, new Vector3(0.20f, 0.11f, 0.39f), new Vector3(0.14f, 0.075f, 0.035f), greenMaterial);
+                Cube("Close Mouth", root.transform, new Vector3(0f, -0.16f, 0.41f), new Vector3(0.34f, 0.10f, 0.04f), mouthMaterial);
+                Cube("Close Shoulder", root.transform, new Vector3(0f, -0.62f, 0.04f), new Vector3(1.16f, 0.42f, 0.36f), clothMaterial);
             }
 
             root.SetActive(false);
@@ -409,7 +430,7 @@ namespace TerminalRoute.Runtime
             root.localRotation = Quaternion.Euler(0f, -90f, 0f);
 
             GameObject prefab = passengerPrefabs.Length == 0 ? null : passengerPrefabs[(stopIndex + index) % passengerPrefabs.Length];
-            if (!BuildWorldCharacterModel("Waiting Character Model", root, prefab, 1.58f, false))
+            if (!BuildWorldCharacterModel("Waiting Character Model", root, prefab, 1.58f, false, stopIndex * 3 + index))
             {
                 var cloth = Material("TR Waiting Passenger Cloth " + stopIndex + "-" + index, Color.Lerp(new Color(0.11f, 0.12f, 0.14f), new Color(0.25f, 0.19f, 0.13f), ((stopIndex + index) % 4) / 3f));
                 var skin = Material("TR Waiting Passenger Skin " + stopIndex + "-" + index, Color.Lerp(new Color(0.38f, 0.30f, 0.24f), new Color(0.72f, 0.62f, 0.52f), ((stopIndex * 2 + index) % 5) / 4f));
@@ -496,6 +517,7 @@ namespace TerminalRoute.Runtime
             PlaceExtracted("Abandoned Bus Left", busPrefab, WorldRoot.transform, new Vector3(-13.8f, 0f, 142f), new Vector3(0f, 180f, 0f), 0.62f);
             PlaceExtracted("Abandoned Bus Right", busPrefab, WorldRoot.transform, new Vector3(13.8f, 0f, 408f), new Vector3(0f, 0f, 0f), 0.58f);
             BuildRoadClutter();
+            BuildRoadsideSilhouettes();
             BuildTerminalGate(RouteManager.FirstStopZ + RouteManager.StopInterval * GameState.FinalStopCount + 42f);
         }
 
@@ -558,6 +580,30 @@ namespace TerminalRoute.Runtime
         {
             Cube("Dark Road Patch", WorldRoot.transform, position, new Vector3(1.25f, 0.018f, 0.72f), dashMaterial);
             Cube("Patch Edge Glow", WorldRoot.transform, position + new Vector3(0.42f, 0.012f, 0f), new Vector3(0.06f, 0.020f, 0.62f), laneMaterial);
+        }
+
+        private void BuildRoadsideSilhouettes()
+        {
+            for (int i = 0; i < 9; i++)
+            {
+                float z = 118f + i * 92f;
+                float side = i % 2 == 0 ? -1f : 1f;
+                BuildRoadsideFigure(new Vector3(side * (5.85f + (i % 3) * 0.45f), 0f, z), side, i);
+            }
+        }
+
+        private void BuildRoadsideFigure(Vector3 position, float side, int index)
+        {
+            var root = new GameObject("Roadside Figure " + index).transform;
+            root.SetParent(WorldRoot.transform, false);
+            root.localPosition = position;
+            root.localRotation = Quaternion.Euler(0f, side < 0f ? 88f : -88f, 0f);
+            Material silhouette = Material("TR Roadside Figure " + index, new Color(0.018f, 0.020f, 0.024f));
+            Cube("Figure Body", root, new Vector3(0f, 0.78f, 0f), new Vector3(0.28f, 0.88f, 0.18f), silhouette);
+            Sphere("Figure Head", root, new Vector3(0f, 1.34f, 0.02f), new Vector3(0.25f, 0.28f, 0.23f), silhouette);
+            Cube("Figure Left Arm", root, new Vector3(-0.20f, 0.78f, 0f), new Vector3(0.08f, 0.62f, 0.08f), silhouette);
+            Cube("Figure Right Arm", root, new Vector3(0.20f, 0.78f, 0f), new Vector3(0.08f, 0.62f, 0.08f), silhouette);
+            Cube("Figure Eye Glint", root, new Vector3(side * -0.02f, 1.38f, 0.13f), new Vector3(0.16f, 0.035f, 0.02f), greenMaterial);
         }
 
         private void BuildDistantBuilding(Vector3 position, float scale)
@@ -629,6 +675,9 @@ namespace TerminalRoute.Runtime
             Cube("Windshield Left Pillar", ProceduralInteriorRoot.transform, new Vector3(-1.45f, 1.45f, 1.24f), new Vector3(0.16f, 1.55f, 0.16f), busMaterial);
             Cube("Windshield Right Pillar", ProceduralInteriorRoot.transform, new Vector3(1.45f, 1.45f, 1.24f), new Vector3(0.16f, 1.55f, 0.16f), busMaterial);
             Cube("Mirror Frame", ProceduralInteriorRoot.transform, new Vector3(0f, 1.98f, 0.92f), new Vector3(1.35f, 0.28f, 0.08f), dashMaterial);
+            frontDoorPanel = Cube("Front Door Panel", ProceduralInteriorRoot.transform, new Vector3(1.53f, 1.16f, 0.36f), new Vector3(0.055f, 1.38f, 0.56f), glassMaterial).transform;
+            rearDoorPanel = Cube("Rear Door Panel", ProceduralInteriorRoot.transform, new Vector3(1.53f, 1.16f, -0.24f), new Vector3(0.055f, 1.38f, 0.56f), glassMaterial).transform;
+            SetDoorsOpen(false);
 
             Cube("Dashboard", ProceduralInteriorRoot.transform, new Vector3(0f, 0.72f, 0.72f), new Vector3(2.8f, 0.35f, 0.75f), dashMaterial);
             Cube("Driver Console Face", ProceduralInteriorRoot.transform, new Vector3(0.58f, 0.92f, 0.72f), new Vector3(0.7f, 0.12f, 0.52f), busPaintMaterial);
@@ -704,7 +753,8 @@ namespace TerminalRoute.Runtime
             model.transform.localRotation = Quaternion.identity;
             model.transform.localScale = Vector3.one;
             RemoveColliders(model);
-            PoseSeated(model.transform, passengerIndex % 2 == 0);
+            DisableAnimationComponents(model);
+            PoseSeated(model.transform, passengerIndex);
             FitModelToHeight(model.transform, root, 1.16f);
 
             Transform head = FindNamedTransform(model.transform, "head") ?? model.transform;
@@ -717,7 +767,7 @@ namespace TerminalRoute.Runtime
             return new PassengerVisual(root, head, leftEye, rightEye, null, false);
         }
 
-        private bool BuildWorldCharacterModel(string name, Transform parent, GameObject prefab, float targetHeight, bool closeThreatPose)
+        private bool BuildWorldCharacterModel(string name, Transform parent, GameObject prefab, float targetHeight, bool closeThreatPose, int poseVariant = 0)
         {
             if (prefab == null)
             {
@@ -730,6 +780,7 @@ namespace TerminalRoute.Runtime
             model.transform.localRotation = Quaternion.identity;
             model.transform.localScale = Vector3.one;
             RemoveColliders(model);
+            DisableAnimationComponents(model);
 
             if (closeThreatPose)
             {
@@ -737,7 +788,7 @@ namespace TerminalRoute.Runtime
             }
             else
             {
-                PoseStanding(model.transform);
+                PoseStanding(model.transform, poseVariant);
             }
 
             FitModelToHeight(model.transform, parent, targetHeight);
@@ -857,28 +908,94 @@ namespace TerminalRoute.Runtime
             light.range = 7f;
         }
 
-        private static void PoseSeated(Transform model, bool leanLeft)
+        private static void PoseSeated(Transform model, int poseVariant)
         {
-            RotateBone(model, "leftupleg", new Vector3(-72f, 0f, -6f));
-            RotateBone(model, "rightupleg", new Vector3(-72f, 0f, 6f));
-            RotateBone(model, "leftleg", new Vector3(78f, 0f, 0f));
-            RotateBone(model, "rightleg", new Vector3(78f, 0f, 0f));
-            RotateBone(model, "leftarm", new Vector3(18f, 0f, -38f));
-            RotateBone(model, "rightarm", new Vector3(18f, 0f, 38f));
-            RotateBone(model, "leftforearm", new Vector3(0f, 0f, -48f));
-            RotateBone(model, "rightforearm", new Vector3(0f, 0f, 48f));
-            RotateBone(model, "spine", new Vector3(leanLeft ? 3f : -3f, 0f, leanLeft ? 2f : -2f));
+            int variant = Mathf.Abs(poseVariant) % 4;
+            bool leanLeft = variant == 0 || variant == 2;
+
+            RotateBone(model, "hips", new Vector3(0f, leanLeft ? -3f : 3f, leanLeft ? -3f : 3f));
+            RotateBone(model, "leftupleg", new Vector3(-82f, 2f, -8f));
+            RotateBone(model, "rightupleg", new Vector3(-82f, -2f, 8f));
+            RotateBone(model, "leftleg", new Vector3(86f, 0f, 0f));
+            RotateBone(model, "rightleg", new Vector3(86f, 0f, 0f));
+            RotateBone(model, "spine", new Vector3(variant == 3 ? 9f : 4f, 0f, leanLeft ? 4f : -4f));
+            RotateBone(model, "neck", new Vector3(leanLeft ? -2f : 2f, 0f, leanLeft ? -3f : 3f));
+            RotateBone(model, "head", new Vector3(leanLeft ? -3f : 2f, 0f, leanLeft ? -4f : 4f));
+
+            switch (variant)
+            {
+                case 1:
+                    RotateBone(model, "leftarm", new Vector3(24f, -4f, -82f));
+                    RotateBone(model, "rightarm", new Vector3(44f, -6f, 64f));
+                    RotateBone(model, "leftforearm", new Vector3(8f, 0f, -48f));
+                    RotateBone(model, "rightforearm", new Vector3(8f, 0f, 78f));
+                    break;
+                case 2:
+                    RotateBone(model, "leftarm", new Vector3(48f, 8f, -66f));
+                    RotateBone(model, "rightarm", new Vector3(28f, -6f, 82f));
+                    RotateBone(model, "leftforearm", new Vector3(10f, 0f, -76f));
+                    RotateBone(model, "rightforearm", new Vector3(4f, 0f, 42f));
+                    break;
+                case 3:
+                    RotateBone(model, "leftarm", new Vector3(32f, 0f, -74f));
+                    RotateBone(model, "rightarm", new Vector3(32f, 0f, 74f));
+                    RotateBone(model, "leftforearm", new Vector3(8f, 0f, -64f));
+                    RotateBone(model, "rightforearm", new Vector3(8f, 0f, 64f));
+                    break;
+                default:
+                    RotateBone(model, "leftarm", new Vector3(28f, 6f, -78f));
+                    RotateBone(model, "rightarm", new Vector3(28f, -6f, 78f));
+                    RotateBone(model, "leftforearm", new Vector3(6f, 0f, -54f));
+                    RotateBone(model, "rightforearm", new Vector3(6f, 0f, 54f));
+                    break;
+            }
         }
 
-        private static void PoseStanding(Transform model)
+        private static void PoseStanding(Transform model, int poseVariant)
         {
-            RotateBone(model, "leftarm", new Vector3(18f, 0f, -54f));
-            RotateBone(model, "rightarm", new Vector3(18f, 0f, 54f));
-            RotateBone(model, "leftforearm", new Vector3(0f, 0f, -34f));
-            RotateBone(model, "rightforearm", new Vector3(0f, 0f, 34f));
-            RotateBone(model, "leftupleg", new Vector3(-2f, 0f, -3f));
-            RotateBone(model, "rightupleg", new Vector3(-2f, 0f, 3f));
-            RotateBone(model, "spine", new Vector3(2f, 0f, 0f));
+            int variant = Mathf.Abs(poseVariant) % 5;
+
+            RotateBone(model, "hips", new Vector3(0f, variant % 2 == 0 ? -3f : 3f, variant % 2 == 0 ? -2f : 2f));
+            RotateBone(model, "leftupleg", new Vector3(variant == 4 ? -8f : -3f, 0f, -4f));
+            RotateBone(model, "rightupleg", new Vector3(variant == 3 ? -8f : -3f, 0f, 4f));
+            RotateBone(model, "leftleg", new Vector3(variant == 4 ? 7f : 2f, 0f, 0f));
+            RotateBone(model, "rightleg", new Vector3(variant == 3 ? 7f : 2f, 0f, 0f));
+            RotateBone(model, "spine", new Vector3(4f, 0f, variant % 2 == 0 ? -4f : 4f));
+            RotateBone(model, "head", new Vector3(variant == 1 ? 7f : 1f, variant == 2 ? -10f : 0f, variant % 2 == 0 ? 3f : -3f));
+
+            switch (variant)
+            {
+                case 1:
+                    RotateBone(model, "leftarm", new Vector3(42f, 4f, -78f));
+                    RotateBone(model, "leftforearm", new Vector3(22f, 0f, -72f));
+                    RotateBone(model, "rightarm", new Vector3(18f, -4f, 72f));
+                    RotateBone(model, "rightforearm", new Vector3(6f, 0f, 30f));
+                    break;
+                case 2:
+                    RotateBone(model, "leftarm", new Vector3(36f, 8f, -66f));
+                    RotateBone(model, "rightarm", new Vector3(36f, -8f, 66f));
+                    RotateBone(model, "leftforearm", new Vector3(8f, 0f, -88f));
+                    RotateBone(model, "rightforearm", new Vector3(8f, 0f, 88f));
+                    break;
+                case 3:
+                    RotateBone(model, "leftarm", new Vector3(18f, 8f, -86f));
+                    RotateBone(model, "rightarm", new Vector3(46f, -4f, 54f));
+                    RotateBone(model, "leftforearm", new Vector3(4f, 0f, -28f));
+                    RotateBone(model, "rightforearm", new Vector3(18f, 0f, 82f));
+                    break;
+                case 4:
+                    RotateBone(model, "leftarm", new Vector3(48f, 0f, -54f));
+                    RotateBone(model, "rightarm", new Vector3(20f, 0f, 84f));
+                    RotateBone(model, "leftforearm", new Vector3(12f, 0f, -74f));
+                    RotateBone(model, "rightforearm", new Vector3(5f, 0f, 32f));
+                    break;
+                default:
+                    RotateBone(model, "leftarm", new Vector3(22f, 4f, -82f));
+                    RotateBone(model, "rightarm", new Vector3(22f, -4f, 82f));
+                    RotateBone(model, "leftforearm", new Vector3(5f, 0f, -36f));
+                    RotateBone(model, "rightforearm", new Vector3(5f, 0f, 36f));
+                    break;
+            }
         }
 
         private static void PoseCloseThreat(Transform model)
@@ -1021,6 +1138,19 @@ namespace TerminalRoute.Runtime
             foreach (var collider in root.GetComponentsInChildren<Collider>(true))
             {
                 Object.Destroy(collider);
+            }
+        }
+
+        private static void DisableAnimationComponents(GameObject root)
+        {
+            foreach (var animator in root.GetComponentsInChildren<Animator>(true))
+            {
+                animator.enabled = false;
+            }
+
+            foreach (var animation in root.GetComponentsInChildren<Animation>(true))
+            {
+                animation.enabled = false;
             }
         }
 

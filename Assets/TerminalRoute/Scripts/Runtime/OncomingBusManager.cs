@@ -16,6 +16,7 @@ namespace TerminalRoute.Runtime
         private readonly Transform parent;
         private readonly List<GameObject> activeBuses = new List<GameObject>();
         private float spawnTimer;
+        private bool nightmareMode;
 
         public OncomingBusManager(SceneFactory scene)
         {
@@ -24,6 +25,11 @@ namespace TerminalRoute.Runtime
         }
 
         public void Reset()
+        {
+            Reset(GameState.CreateNewRun());
+        }
+
+        public void Reset(GameState state)
         {
             for (int i = 0; i < activeBuses.Count; i++)
             {
@@ -34,7 +40,8 @@ namespace TerminalRoute.Runtime
             }
 
             activeBuses.Clear();
-            spawnTimer = Random.Range(10f, 16f);
+            nightmareMode = state.IsNightmare;
+            spawnTimer = Random.Range(nightmareMode ? 4f : 10f, nightmareMode ? 8f : 16f);
         }
 
         public void Tick(float deltaTime, GameState state, BusController playerBus)
@@ -54,7 +61,7 @@ namespace TerminalRoute.Runtime
                 }
 
                 Vector3 position = bus.transform.position;
-                position.z -= OncomingSpeed * deltaTime;
+                position.z -= (nightmareMode ? 25f : OncomingSpeed) * deltaTime;
                 bus.transform.position = position;
 
                 if (IsCollision(playerBus.LateralPosition, playerBus.WorldZ, position.x, position.z))
@@ -82,7 +89,7 @@ namespace TerminalRoute.Runtime
             }
 
             Spawn(playerBus);
-            spawnTimer = Random.Range(18f, 28f);
+            spawnTimer = Random.Range(nightmareMode ? 7f : 18f, nightmareMode ? 13f : 28f);
         }
 
         public static bool IsCollision(float playerX, float playerZ, float busX, float busZ)
@@ -99,7 +106,8 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
-            bus.transform.position = new Vector3(SpawnX, 0f, playerBus.WorldZ + SpawnDistance);
+            float spawnDistance = nightmareMode ? 128f : SpawnDistance;
+            bus.transform.position = new Vector3(SpawnX, 0f, playerBus.WorldZ + spawnDistance);
             activeBuses.Add(bus);
         }
     }

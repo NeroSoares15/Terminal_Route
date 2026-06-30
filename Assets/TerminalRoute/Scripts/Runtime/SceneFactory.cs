@@ -9,6 +9,9 @@ namespace TerminalRoute.Runtime
 {
     public sealed class SceneFactory
     {
+        private readonly GameMode mode;
+        private readonly int targetStopCount;
+        private readonly float routeStopInterval;
         private readonly Material roadMaterial = ResourceMaterial("RoadAsphalt", "TR Road", new Color(0.10f, 0.10f, 0.14f));
         private readonly Material groundMaterial = ResourceMaterial("Grass", "TR Grass", new Color(0.06f, 0.11f, 0.07f));
         private readonly Material concreteMaterial = ResourceMaterial("RoadConcrete", "TR Concrete", new Color(0.26f, 0.25f, 0.23f));
@@ -20,6 +23,7 @@ namespace TerminalRoute.Runtime
         private readonly Material dashMaterial = Material("TR Dashboard", new Color(0.04f, 0.045f, 0.055f));
         private readonly Material seatMaterial = ResourceMaterial("SeatVinyl", "TR Seats", new Color(0.19f, 0.16f, 0.10f));
         private readonly Material greenMaterial = Material("TR Phosphor", new Color(0.20f, 0.95f, 0.22f));
+        private readonly Material stopZoneMaterial = Material("TR Stop Zone", new Color(0.02f, 0.22f, 0.05f));
         private readonly Material amberMaterial = Material("TR Amber", new Color(0.95f, 0.55f, 0.12f));
         private readonly Material skinMaterial = Material("TR Skin", new Color(0.58f, 0.53f, 0.43f));
         private readonly Material clothMaterial = Material("TR Cloth", new Color(0.23f, 0.18f, 0.19f));
@@ -27,6 +31,7 @@ namespace TerminalRoute.Runtime
         private readonly Material ballMaterial = Material("TR Ball", new Color(0.70f, 0.70f, 0.62f));
         private readonly Material fogTreeMaterial = Material("TR Tree", new Color(0.05f, 0.08f, 0.07f));
         private readonly Material treeBillboardMaterial = ResourceMaterial("TreeBillboard", "TR Tree Billboard", new Color(0.22f, 0.35f, 0.20f));
+        private readonly Material scaryMonkeyMaterial = TexturedBillboardMaterial("TR Scary Monkey", "TerminalRoute/Art/ScaryMonkeyCutout", Color.white);
         private readonly Vector3 ballStart = new Vector3(0f, 0.25f, -9.2f);
         private readonly GameObject busStopPrefab = ExtractedPrefab("BusStop", "Assets/TerminalRoute/ExtractedPrefabs/BusStop_Props/Bus_stop.prefab");
         private readonly GameObject busStopAltPrefab = ExtractedPrefab("BusStopAlt", "Assets/TerminalRoute/ExtractedPrefabs/BusStop_Stop_Alt/Bus_stop_001.prefab");
@@ -38,6 +43,28 @@ namespace TerminalRoute.Runtime
         private readonly GameObject treePrefab = ExtractedPrefab("Tree", "Assets/TerminalRoute/ExtractedPrefabs/BusStop_Props/Tree.prefab");
         private readonly GameObject treeAltPrefab = ExtractedPrefab("TreeAlt", "Assets/TerminalRoute/ExtractedPrefabs/BusStop_Props/Tree_01.prefab");
         private readonly GameObject treeTallPrefab = ExtractedPrefab("TreeTall", "Assets/TerminalRoute/ExtractedPrefabs/BusStop_Stop_Alt/Tree_001.prefab");
+        private readonly GameObject urbanGaragePrefab = WorldPrefab("TerminalRoute/World/Buildings/Garage/model", "Assets/Resources/TerminalRoute/World/Buildings/Garage/model.fbx");
+        private readonly GameObject urbanPanelak1Prefab = WorldPrefab("TerminalRoute/World/Buildings/Panelak1/Panelak 1", "Assets/Resources/TerminalRoute/World/Buildings/Panelak1/Panelak 1.fbx");
+        private readonly GameObject urbanPanelak2Prefab = WorldPrefab("TerminalRoute/World/Buildings/Panelak2/model", "Assets/Resources/TerminalRoute/World/Buildings/Panelak2/model.fbx");
+        private readonly Material urbanGarageMaterial = TexturedWorldMaterial("TR Urban Garage", "TerminalRoute/World/Buildings/Garage/texture", Color.white, false);
+        private readonly Material urbanPanelak1Material = TexturedWorldMaterial("TR Urban Panelak 1", "TerminalRoute/World/Buildings/Panelak1/texture", Color.white, false);
+        private readonly Material urbanPanelak2Material = TexturedWorldMaterial("TR Urban Panelak 2", "TerminalRoute/World/Buildings/Panelak2/texture (2)", Color.white, false);
+        private readonly GameObject car01Prefab = WorldPrefab("TerminalRoute/World/Cars/Car01/Car", "Assets/Resources/TerminalRoute/World/Cars/Car01/Car.obj");
+        private readonly GameObject car03Prefab = WorldPrefab("TerminalRoute/World/Cars/Car03/Car3", "Assets/Resources/TerminalRoute/World/Cars/Car03/Car3.obj");
+        private readonly GameObject car05Prefab = WorldPrefab("TerminalRoute/World/Cars/Car05/Car5", "Assets/Resources/TerminalRoute/World/Cars/Car05/Car5.obj");
+        private readonly GameObject car05PolicePrefab = WorldPrefab("TerminalRoute/World/Cars/Car05/Car5_Police", "Assets/Resources/TerminalRoute/World/Cars/Car05/Car5_Police.obj");
+        private readonly GameObject car06Prefab = WorldPrefab("TerminalRoute/World/Cars/Car06/Car6", "Assets/Resources/TerminalRoute/World/Cars/Car06/Car6.obj");
+        private readonly GameObject car08Prefab = WorldPrefab("TerminalRoute/World/Cars/Car08/Car8", "Assets/Resources/TerminalRoute/World/Cars/Car08/Car8.obj");
+        private readonly Material car01Material = TexturedWorldMaterial("TR Car 01", "TerminalRoute/World/Cars/Car01/car", Color.white, false);
+        private readonly Material car03Material = TexturedWorldMaterial("TR Car 03", "TerminalRoute/World/Cars/Car03/car3", Color.white, false);
+        private readonly Material car05Material = TexturedWorldMaterial("TR Car 05", "TerminalRoute/World/Cars/Car05/car5", Color.white, false);
+        private readonly Material car05PoliceMaterial = TexturedWorldMaterial("TR Car 05 Police", "TerminalRoute/World/Cars/Car05/car5_police", Color.white, false);
+        private readonly Material car06Material = TexturedWorldMaterial("TR Burned Car", "TerminalRoute/World/Cars/Car06/car6", Color.white, false);
+        private readonly Material car08Material = TexturedWorldMaterial("TR Car 08", "TerminalRoute/World/Cars/Car08/Car8", Color.white, false);
+        private readonly GameObject[] urbanBuildingPrefabs;
+        private readonly GameObject[] parkedCarPrefabs;
+        private readonly Material[] urbanBuildingMaterials;
+        private readonly Material[] parkedCarMaterials;
         private readonly GameObject[] passengerPrefabs =
         {
             CharacterPrefab("Passenger01", "Assets/TerminalRoute/AssetPacks/Characters_psx/Models/Male/Character_01.fbx"),
@@ -81,6 +108,22 @@ namespace TerminalRoute.Runtime
         public Transform SteeringWheel { get; private set; }
         private Transform frontDoorPanel;
         private Transform rearDoorPanel;
+
+        public SceneFactory()
+            : this(GameMode.Route04)
+        {
+        }
+
+        public SceneFactory(GameMode mode)
+        {
+            this.mode = mode;
+            targetStopCount = mode == GameMode.Nightmare ? GameState.NightmareStopCount : GameState.FinalStopCount;
+            routeStopInterval = mode == GameMode.Nightmare ? GameState.NightmareStopInterval : GameState.DefaultStopInterval;
+            urbanBuildingPrefabs = new[] { urbanGaragePrefab, urbanPanelak1Prefab, urbanPanelak2Prefab };
+            parkedCarPrefabs = new[] { car01Prefab, car03Prefab, car05Prefab, car05PolicePrefab, car06Prefab, car08Prefab };
+            urbanBuildingMaterials = new[] { urbanGarageMaterial, urbanPanelak1Material, urbanPanelak2Material };
+            parkedCarMaterials = new[] { car01Material, car03Material, car05Material, car05PoliceMaterial, car06Material, car08Material };
+        }
 
         public void Build()
         {
@@ -327,9 +370,11 @@ namespace TerminalRoute.Runtime
         private void BuildWorld()
         {
             WorldRoot = new GameObject("Terminal Route World");
-            Cube("Green Ground Plane", WorldRoot.transform, new Vector3(0f, -0.22f, 700f), new Vector3(96f, 0.08f, 1520f), groundMaterial);
+            float routeLength = RouteManager.FirstStopZ + routeStopInterval * (targetStopCount + GameState.MaxMissedStops + 1) + 260f;
+            int roadSegments = Mathf.CeilToInt(routeLength / 40f) + 2;
+            Cube("Green Ground Plane", WorldRoot.transform, new Vector3(0f, -0.22f, routeLength * 0.5f), new Vector3(140f, 0.08f, routeLength + 300f), groundMaterial);
 
-            for (int i = -1; i < 38; i++)
+            for (int i = -1; i < roadSegments; i++)
             {
                 float z = i * 40f;
                 Cube("Road " + i, WorldRoot.transform, new Vector3(0f, -0.08f, z), new Vector3(8f, 0.12f, 40f), roadMaterial);
@@ -369,10 +414,10 @@ namespace TerminalRoute.Runtime
 
         private void BuildStops()
         {
-            int stopCount = GameState.FinalStopCount + GameState.MaxMissedStops;
+            int stopCount = targetStopCount + GameState.MaxMissedStops + 1;
             for (int i = 0; i < stopCount; i++)
             {
-                float z = RouteManager.FirstStopZ + i * RouteManager.StopInterval;
+                float z = RouteManager.FirstStopZ + i * routeStopInterval;
                 GameObject stopPrefab = i % 2 == 0 ? busStopPrefab : busStopAltPrefab;
                 if (PlaceExtracted("Bus Stop Asset " + i, stopPrefab, WorldRoot.transform, new Vector3(6.7f, 0f, z), new Vector3(0f, -90f, 0f), 1f) != null)
                 {
@@ -405,7 +450,7 @@ namespace TerminalRoute.Runtime
 
         private void BuildStopCapturePad(int index, float z)
         {
-            Cube("Stop Capture Zone " + index, WorldRoot.transform, new Vector3(2.55f, 0.035f, z), new Vector3(1.75f, 0.025f, 8.8f), greenMaterial);
+            Cube("Stop Capture Zone " + index, WorldRoot.transform, new Vector3(2.55f, 0.035f, z), new Vector3(1.75f, 0.025f, 8.8f), stopZoneMaterial);
             Cube("Stop Curb Glow " + index, WorldRoot.transform, new Vector3(3.58f, 0.06f, z), new Vector3(0.16f, 0.055f, 7.4f), amberMaterial);
         }
 
@@ -495,11 +540,11 @@ namespace TerminalRoute.Runtime
             for (int sideIndex = 0; sideIndex < 2; sideIndex++)
             {
                 float side = sideIndex == 0 ? -1f : 1f;
-                for (int t = 0; t < 6; t++)
+                for (int t = 0; t < 8; t++)
                 {
-                    float laneOffset = 11.4f + t * 2.25f + ((segmentIndex + t) % 2) * 0.8f;
-                    float zOffset = -18f + t * 6.8f + ((segmentIndex * 5 + t * 3) % 5);
-                    float height = 4.3f + ((segmentIndex + t) % 4) * 0.70f;
+                    float laneOffset = 10.4f + t * 2.55f + ((segmentIndex + t) % 2) * 0.9f;
+                    float zOffset = -19f + t * 5.8f + ((segmentIndex * 5 + t * 3) % 5);
+                    float height = 4.8f + ((segmentIndex + t) % 4) * 0.82f;
                     BuildTree(new Vector3(side * laneOffset, 0f, segmentZ + zOffset), height);
                 }
             }
@@ -507,25 +552,89 @@ namespace TerminalRoute.Runtime
 
         private void BuildRouteSetPieces()
         {
-            for (int i = 0; i < 12; i++)
+            BuildUrbanCorridor();
+            PlaceExtracted("Abandoned Bus Left", busPrefab, WorldRoot.transform, new Vector3(-13.8f, 0f, 142f), new Vector3(0f, 180f, 0f), 0.78f);
+            PlaceExtracted("Abandoned Bus Right", busPrefab, WorldRoot.transform, new Vector3(13.8f, 0f, 408f), new Vector3(0f, 0f, 0f), 0.72f);
+            BuildParkedCars();
+            BuildRoadClutter();
+            BuildIntersections();
+            BuildRoadsideSilhouettes();
+            BuildTerminalGate(RouteManager.FirstStopZ + routeStopInterval * targetStopCount + 42f);
+        }
+
+        private void BuildUrbanCorridor()
+        {
+            float lastZ = RouteManager.FirstStopZ + routeStopInterval * targetStopCount + 180f;
+            int blockCount = Mathf.Clamp(Mathf.CeilToInt(lastZ / 38f), mode == GameMode.Nightmare ? 72 : 34, mode == GameMode.Nightmare ? 124 : 68);
+            for (int i = 0; i < blockCount; i++)
             {
-                float z = 42f + i * 86f;
-                float side = i % 2 == 0 ? -1f : 1f;
-                BuildDistantBuilding(new Vector3(side * (17.5f + (i % 3) * 1.8f), 0f, z), 1.0f + (i % 4) * 0.14f);
+                float z = 34f + i * 38f + ((i % 5) - 2) * 3.0f;
+                if (z > lastZ)
+                {
+                    break;
+                }
+
+                BuildUrbanSideCluster(i, z, -1f);
+                BuildUrbanSideCluster(i, z + 14f + (i % 3) * 3.5f, 1f);
+            }
+        }
+
+        private void BuildUrbanSideCluster(int index, float z, float side)
+        {
+            float nearX = side * (11.8f + (index % 3) * 1.8f);
+            float midX = side * (18.5f + ((index + 1) % 3) * 2.2f);
+            float farX = side * (28.0f + (index % 4) * 3.0f);
+            float nearScale = 1.18f + (index % 5) * 0.16f;
+            float midScale = 1.42f + ((index + 1) % 4) * 0.18f;
+            float farScale = 1.68f + ((index + 2) % 4) * 0.20f;
+
+            BuildDistantBuilding(new Vector3(nearX, 0f, z), nearScale);
+            BuildDistantBuilding(new Vector3(midX, 0f, z + 9f), midScale);
+            if (index % 3 != 1)
+            {
+                BuildDistantBuilding(new Vector3(farX, 0f, z + 18f), farScale);
             }
 
-            PlaceExtracted("Abandoned Bus Left", busPrefab, WorldRoot.transform, new Vector3(-13.8f, 0f, 142f), new Vector3(0f, 180f, 0f), 0.62f);
-            PlaceExtracted("Abandoned Bus Right", busPrefab, WorldRoot.transform, new Vector3(13.8f, 0f, 408f), new Vector3(0f, 0f, 0f), 0.58f);
-            BuildRoadClutter();
-            BuildRoadsideSilhouettes();
-            BuildTerminalGate(RouteManager.FirstStopZ + RouteManager.StopInterval * GameState.FinalStopCount + 42f);
+            if (index % 4 == 1)
+            {
+                BuildDistantBuilding(new Vector3(side * 35.5f, 0f, z - 10f), 1.55f);
+            }
+        }
+
+        private void BuildIntersections()
+        {
+            int intersectionCount = mode == GameMode.Nightmare ? 14 : 8;
+            for (int i = 0; i < intersectionCount; i++)
+            {
+                float z = 206f + i * 188f;
+                Cube("Side Road Left " + i, WorldRoot.transform, new Vector3(-10.8f, -0.07f, z), new Vector3(14f, 0.10f, 5.2f), roadMaterial);
+                Cube("Side Road Right " + i, WorldRoot.transform, new Vector3(10.8f, -0.07f, z), new Vector3(14f, 0.10f, 5.2f), roadMaterial);
+                Cube("Crosswalk Left " + i, WorldRoot.transform, new Vector3(-3.15f, 0.018f, z - 1.52f), new Vector3(1.0f, 0.020f, 0.10f), laneMaterial);
+                Cube("Crosswalk Right " + i, WorldRoot.transform, new Vector3(3.15f, 0.018f, z + 1.52f), new Vector3(1.0f, 0.020f, 0.10f), laneMaterial);
+                BuildTrafficLight(new Vector3(-4.65f, 0f, z + 2.85f), 1f, i);
+                BuildTrafficLight(new Vector3(4.65f, 0f, z - 2.85f), -1f, i + 5);
+                BuildDistantBuilding(new Vector3(-16.8f, 0f, z - 8f), 1.34f);
+                BuildDistantBuilding(new Vector3(16.9f, 0f, z + 8f), 1.42f);
+                BuildDistantBuilding(new Vector3(-27.0f, 0f, z + 15f), 1.72f);
+                BuildDistantBuilding(new Vector3(27.4f, 0f, z - 15f), 1.64f);
+            }
+        }
+
+        private void BuildTrafficLight(Vector3 position, float side, int index)
+        {
+            Cube("Traffic Light Pole " + index, WorldRoot.transform, position + new Vector3(0f, 1.18f, 0f), new Vector3(0.10f, 2.35f, 0.10f), fenceMaterial);
+            Cube("Traffic Light Arm " + index, WorldRoot.transform, position + new Vector3(side * 0.48f, 2.18f, 0f), new Vector3(1.0f, 0.08f, 0.08f), fenceMaterial);
+            Cube("Traffic Light Box " + index, WorldRoot.transform, position + new Vector3(side * 0.96f, 2.08f, 0f), new Vector3(0.24f, 0.56f, 0.18f), dashMaterial);
+            Cube("Traffic Red " + index, WorldRoot.transform, position + new Vector3(side * 1.08f, 2.24f, -0.095f), new Vector3(0.08f, 0.08f, 0.025f), amberMaterial);
+            Cube("Traffic Green " + index, WorldRoot.transform, position + new Vector3(side * 1.08f, 1.92f, -0.095f), new Vector3(0.08f, 0.08f, 0.025f), greenMaterial);
         }
 
         private void BuildRoadClutter()
         {
-            for (int i = 0; i < 22; i++)
+            int clutterCount = mode == GameMode.Nightmare ? 58 : 22;
+            for (int i = 0; i < clutterCount; i++)
             {
-                float z = 55f + i * 48f + (i % 3) * 7f;
+                float z = SafeRoadClutterZ(55f + i * 48f + (i % 3) * 7f, i);
                 float side = i % 2 == 0 ? -1f : 1f;
                 float x = side * (2.35f + (i % 4) * 0.22f);
 
@@ -561,7 +670,22 @@ namespace TerminalRoute.Runtime
         private void BuildFallenSign(Vector3 position, float side)
         {
             Cube("Fallen Sign Pole", WorldRoot.transform, position + new Vector3(0f, 0.08f, 0f), new Vector3(0.08f, 0.08f, 1.55f), fenceMaterial);
-            Cube("Fallen Reflector", WorldRoot.transform, position + new Vector3(side * 0.28f, 0.18f, 0.60f), new Vector3(0.72f, 0.34f, 0.06f), greenMaterial);
+            Cube("Fallen Reflector", WorldRoot.transform, position + new Vector3(side * 0.28f, 0.18f, 0.60f), new Vector3(0.72f, 0.34f, 0.06f), amberMaterial);
+        }
+
+        private float SafeRoadClutterZ(float z, int index)
+        {
+            int stopCount = targetStopCount + GameState.MaxMissedStops + 1;
+            for (int i = 0; i < stopCount; i++)
+            {
+                float stopZ = RouteManager.FirstStopZ + i * routeStopInterval;
+                if (Mathf.Abs(z - stopZ) < 18f)
+                {
+                    return z + (index % 2 == 0 ? 24f : -24f);
+                }
+            }
+
+            return z;
         }
 
         private void BuildRoadCrate(Vector3 position)
@@ -580,6 +704,32 @@ namespace TerminalRoute.Runtime
         {
             Cube("Dark Road Patch", WorldRoot.transform, position, new Vector3(1.25f, 0.018f, 0.72f), dashMaterial);
             Cube("Patch Edge Glow", WorldRoot.transform, position + new Vector3(0.42f, 0.012f, 0f), new Vector3(0.06f, 0.020f, 0.62f), laneMaterial);
+        }
+
+        private void BuildParkedCars()
+        {
+            int carCount = mode == GameMode.Nightmare ? 44 : 28;
+            for (int i = 0; i < carCount; i++)
+            {
+                GameObject prefab = PickAvailablePrefab(parkedCarPrefabs, i);
+                if (prefab == null)
+                {
+                    return;
+                }
+
+                float side = i % 2 == 0 ? -1f : 1f;
+                float z = SafeRoadClutterZ(118f + i * 56f + (i % 3) * 11f, i + 73);
+                float shoulderOffset = 7.4f + (i % 3) * 0.70f;
+                float yaw = side < 0f ? 0f : 180f;
+                Vector3 position = new Vector3(side * shoulderOffset, 0f, z);
+                Material material = PickWorldMaterial(parkedCarMaterials, PrefabIndex(parkedCarPrefabs, prefab));
+                GameObject car = PlaceWorldModel("Parked PSX Car " + i, prefab, WorldRoot.transform, position, new Vector3(0f, yaw, 0f), 1.04f, 4.0f, material);
+                if (car != null)
+                {
+                    AutoAlignLongAxisToRoute(car);
+                    Cube("Parked Car Shadow " + i, WorldRoot.transform, position + new Vector3(0f, 0.014f, 0f), new Vector3(3.25f, 0.020f, 1.55f), dashMaterial);
+                }
+            }
         }
 
         private void BuildRoadsideSilhouettes()
@@ -608,6 +758,11 @@ namespace TerminalRoute.Runtime
 
         private void BuildDistantBuilding(Vector3 position, float scale)
         {
+            if (TryPlaceUrbanBuilding(position, scale))
+            {
+                return;
+            }
+
             if (PlaceExtracted("Roadside House", housePrefab, WorldRoot.transform, position, new Vector3(0f, position.x < 0f ? 90f : -90f, 0f), 0.28f * scale) != null)
             {
                 return;
@@ -619,6 +774,23 @@ namespace TerminalRoute.Runtime
             {
                 Cube("Dead Window", WorldRoot.transform, position + new Vector3((-0.7f + w * 0.7f) * scale, 1.45f * scale, -0.72f * scale), new Vector3(0.22f * scale, 0.28f * scale, 0.04f * scale), greenMaterial);
             }
+        }
+
+        private bool TryPlaceUrbanBuilding(Vector3 position, float scale)
+        {
+            int seed = Mathf.Abs(Mathf.RoundToInt(position.z * 0.11f + position.x * 2.7f));
+            GameObject prefab = PickAvailablePrefab(urbanBuildingPrefabs, seed);
+            if (prefab == null)
+            {
+                return false;
+            }
+
+            int variant = PrefabIndex(urbanBuildingPrefabs, prefab);
+            float targetHeight = variant == 0 ? 3.4f : 9.0f + (variant * 0.95f);
+            float yaw = position.x < 0f ? 90f : -90f;
+            Vector3 setback = new Vector3(position.x < 0f ? -1.8f : 1.8f, 0f, 0f);
+            Material material = PickWorldMaterial(urbanBuildingMaterials, variant);
+            return PlaceWorldModel("Urban Decay Building", prefab, WorldRoot.transform, position + setback, new Vector3(0f, yaw, 0f), targetHeight * scale, 22.0f * scale, material) != null;
         }
 
         private void BuildTerminalGate(float z)
@@ -805,11 +977,19 @@ namespace TerminalRoute.Runtime
         {
             Monkey = new GameObject("O Macaco");
             Monkey.transform.SetParent(BusRoot.transform, false);
-            Cube("Monkey Body", Monkey.transform, new Vector3(0f, -0.12f, 0f), new Vector3(0.38f, 0.62f, 0.24f), monkeyMaterial);
-            Sphere("Monkey Head", Monkey.transform, new Vector3(0f, 0.36f, 0.05f), new Vector3(0.42f, 0.38f, 0.32f), monkeyMaterial);
-            Cube("Monkey Face", Monkey.transform, new Vector3(0f, 0.35f, 0.23f), new Vector3(0.24f, 0.14f, 0.035f), skinMaterial);
-            Cube("Monkey Left Eye", Monkey.transform, new Vector3(-0.07f, 0.42f, 0.255f), new Vector3(0.04f, 0.04f, 0.015f), greenMaterial);
-            Cube("Monkey Right Eye", Monkey.transform, new Vector3(0.07f, 0.42f, 0.255f), new Vector3(0.04f, 0.04f, 0.015f), greenMaterial);
+            if (scaryMonkeyMaterial.mainTexture != null)
+            {
+                TreeCard("Scary Monkey Cutout", Monkey.transform, new Vector3(0f, 0.08f, 0f), new Vector2(1.04f, 1.56f), 0f, scaryMonkeyMaterial);
+            }
+            else
+            {
+                Cube("Monkey Body", Monkey.transform, new Vector3(0f, -0.12f, 0f), new Vector3(0.38f, 0.62f, 0.24f), monkeyMaterial);
+                Sphere("Monkey Head", Monkey.transform, new Vector3(0f, 0.36f, 0.05f), new Vector3(0.42f, 0.38f, 0.32f), monkeyMaterial);
+                Cube("Monkey Face", Monkey.transform, new Vector3(0f, 0.35f, 0.23f), new Vector3(0.24f, 0.14f, 0.035f), skinMaterial);
+                Cube("Monkey Left Eye", Monkey.transform, new Vector3(-0.07f, 0.42f, 0.255f), new Vector3(0.04f, 0.04f, 0.015f), greenMaterial);
+                Cube("Monkey Right Eye", Monkey.transform, new Vector3(0.07f, 0.42f, 0.255f), new Vector3(0.04f, 0.04f, 0.015f), greenMaterial);
+            }
+
             SetMonkeyRow(10);
             Monkey.SetActive(false);
         }
@@ -1109,6 +1289,68 @@ namespace TerminalRoute.Runtime
             return prefab;
         }
 
+        private static GameObject WorldPrefab(string resourcePath, string editorPath)
+        {
+            var prefab = Resources.Load<GameObject>(resourcePath);
+#if UNITY_EDITOR
+            if (prefab == null)
+            {
+                prefab = AssetDatabase.LoadAssetAtPath<GameObject>(editorPath);
+            }
+#endif
+
+            return prefab;
+        }
+
+        private static GameObject PickAvailablePrefab(GameObject[] prefabs, int seed)
+        {
+            if (prefabs == null || prefabs.Length == 0)
+            {
+                return null;
+            }
+
+            int start = Mathf.Abs(seed) % prefabs.Length;
+            for (int offset = 0; offset < prefabs.Length; offset++)
+            {
+                GameObject prefab = prefabs[(start + offset) % prefabs.Length];
+                if (prefab != null)
+                {
+                    return prefab;
+                }
+            }
+
+            return null;
+        }
+
+        private static int PrefabIndex(GameObject[] prefabs, GameObject prefab)
+        {
+            if (prefabs == null)
+            {
+                return 0;
+            }
+
+            for (int i = 0; i < prefabs.Length; i++)
+            {
+                if (prefabs[i] == prefab)
+                {
+                    return i;
+                }
+            }
+
+            return 0;
+        }
+
+        private static Material PickWorldMaterial(Material[] materials, int index)
+        {
+            if (materials == null || materials.Length == 0)
+            {
+                return null;
+            }
+
+            index = Mathf.Clamp(index, 0, materials.Length - 1);
+            return materials[index];
+        }
+
         private static GameObject PlaceExtracted(string name, GameObject prefab, Transform parent, Vector3 localPosition, Vector3 localEulerAngles, float uniformScale, Material overrideMaterial = null)
         {
             if (prefab == null)
@@ -1131,6 +1373,94 @@ namespace TerminalRoute.Runtime
             }
 
             return gameObject;
+        }
+
+        private static GameObject PlaceWorldModel(string name, GameObject prefab, Transform parent, Vector3 localPosition, Vector3 localEulerAngles, float targetHeight, float maxFootprint, Material overrideMaterial = null)
+        {
+            if (prefab == null)
+            {
+                return null;
+            }
+
+            var gameObject = Object.Instantiate(prefab, parent);
+            gameObject.name = name;
+            gameObject.transform.localPosition = localPosition;
+            gameObject.transform.localRotation = Quaternion.Euler(localEulerAngles);
+            gameObject.transform.localScale = Vector3.one;
+            RemoveColliders(gameObject);
+            DisableAnimationComponents(gameObject);
+            ApplyMaterialOverride(gameObject, overrideMaterial);
+            NormalizeModelBounds(gameObject, parent, localPosition, targetHeight, maxFootprint);
+            return gameObject;
+        }
+
+        private static void ApplyMaterialOverride(GameObject gameObject, Material material)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            foreach (var renderer in gameObject.GetComponentsInChildren<Renderer>(true))
+            {
+                renderer.sharedMaterial = material;
+            }
+        }
+
+        private static void NormalizeModelBounds(GameObject gameObject, Transform parent, Vector3 localPosition, float targetHeight, float maxFootprint)
+        {
+            if (!TryGetRendererBounds(gameObject, out Bounds bounds))
+            {
+                return;
+            }
+
+            if (bounds.size.y > 0.001f)
+            {
+                float heightScale = Mathf.Clamp(targetHeight / bounds.size.y, 0.001f, 100f);
+                gameObject.transform.localScale *= heightScale;
+            }
+
+            if (maxFootprint > 0f && TryGetRendererBounds(gameObject, out bounds))
+            {
+                float footprint = Mathf.Max(bounds.size.x, bounds.size.z);
+                if (footprint > maxFootprint && footprint > 0.001f)
+                {
+                    gameObject.transform.localScale *= Mathf.Clamp(maxFootprint / footprint, 0.001f, 1f);
+                }
+            }
+
+            if (TryGetRendererBounds(gameObject, out bounds))
+            {
+                float targetWorldY = parent != null ? parent.TransformPoint(localPosition).y : localPosition.y;
+                gameObject.transform.position += Vector3.up * (targetWorldY - bounds.min.y);
+            }
+        }
+
+        private static bool TryGetRendererBounds(GameObject root, out Bounds bounds)
+        {
+            var renderers = root.GetComponentsInChildren<Renderer>(true);
+            bounds = new Bounds(root.transform.position, Vector3.zero);
+            bool found = false;
+
+            foreach (var renderer in renderers)
+            {
+                if (!renderer.enabled)
+                {
+                    continue;
+                }
+
+                if (!found)
+                {
+                    bounds = renderer.bounds;
+                    found = true;
+                }
+                else
+                {
+                    bounds.Encapsulate(renderer.bounds);
+                }
+            }
+
+            return found;
         }
 
         private static void RemoveColliders(GameObject root)
@@ -1219,6 +1549,104 @@ namespace TerminalRoute.Runtime
             material.name = name;
             material.color = color;
             return material;
+        }
+
+        private static Material TexturedWorldMaterial(string name, string resourcePath, Color color, bool alphaClip)
+        {
+            Material material = Material(name, color);
+            Texture2D texture = Resources.Load<Texture2D>(resourcePath);
+            if (texture != null)
+            {
+                texture.filterMode = FilterMode.Point;
+                texture.wrapMode = TextureWrapMode.Clamp;
+                material.mainTexture = texture;
+                if (material.HasProperty("_BaseMap"))
+                {
+                    material.SetTexture("_BaseMap", texture);
+                }
+            }
+
+            if (alphaClip)
+            {
+                EnableAlphaClip(material, 0.32f);
+            }
+
+            return material;
+        }
+
+        private static Material TexturedBillboardMaterial(string name, string resourcePath, Color color)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit");
+            if (shader == null)
+            {
+                shader = Shader.Find("Unlit/Texture");
+            }
+
+            if (shader == null)
+            {
+                shader = Shader.Find("Standard");
+            }
+
+            var material = new Material(shader);
+            material.name = name;
+            material.color = color;
+
+            Texture2D texture = Resources.Load<Texture2D>(resourcePath);
+            if (texture != null)
+            {
+                texture.filterMode = FilterMode.Point;
+                texture.wrapMode = TextureWrapMode.Clamp;
+                material.mainTexture = texture;
+                if (material.HasProperty("_BaseMap"))
+                {
+                    material.SetTexture("_BaseMap", texture);
+                }
+            }
+
+            if (material.HasProperty("_Cull"))
+            {
+                material.SetInt("_Cull", 0);
+            }
+
+            EnableTransparentMaterial(material);
+
+            return material;
+        }
+
+        private static void EnableTransparentMaterial(Material material)
+        {
+            if (material == null)
+            {
+                return;
+            }
+
+            if (material.HasProperty("_Surface"))
+            {
+                material.SetFloat("_Surface", 1f);
+            }
+
+            if (material.HasProperty("_Blend"))
+            {
+                material.SetFloat("_Blend", 0f);
+            }
+
+            if (material.HasProperty("_SrcBlend"))
+            {
+                material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            }
+
+            if (material.HasProperty("_DstBlend"))
+            {
+                material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            }
+
+            if (material.HasProperty("_ZWrite"))
+            {
+                material.SetFloat("_ZWrite", 0f);
+            }
+
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            material.renderQueue = 3000;
         }
 
         private static void EnableAlphaClip(Material material, float cutoff)

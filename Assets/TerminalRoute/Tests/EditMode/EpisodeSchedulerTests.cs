@@ -25,5 +25,17 @@ namespace TerminalRoute.Tests
             Assert.AreEqual(-8f, EpisodeScheduler.GetMirrorSanityCost(EpisodeType.InvertedControls));
             Assert.AreEqual(0f, EpisodeScheduler.GetMirrorSanityCost(EpisodeType.None));
         }
+
+        [Test]
+        public void NightmareModeCyclesEventsAfterFirstLoop()
+        {
+            Assert.AreEqual(EpisodeType.None, EpisodeScheduler.GetEpisodeForLoop(1, GameMode.Nightmare));
+            Assert.AreEqual(EpisodeType.Silence, EpisodeScheduler.GetEpisodeForLoop(2, GameMode.Nightmare));
+            Assert.AreEqual(EpisodeType.Monkey, EpisodeScheduler.GetEpisodeForLoop(3, GameMode.Nightmare));
+            Assert.AreEqual(EpisodeType.Ball, EpisodeScheduler.GetEpisodeForLoop(4, GameMode.Nightmare));
+            Assert.AreEqual(EpisodeType.InvertedControls, EpisodeScheduler.GetEpisodeForLoop(5, GameMode.Nightmare));
+            Assert.AreEqual(EpisodeType.LightsOut, EpisodeScheduler.GetEpisodeForLoop(6, GameMode.Nightmare));
+            Assert.AreEqual(EpisodeType.Silence, EpisodeScheduler.GetEpisodeForLoop(7, GameMode.Nightmare));
+        }
     }
 }

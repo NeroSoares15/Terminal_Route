@@ -18,6 +18,7 @@ namespace TerminalRoute.Tests
             Assert.AreEqual(EndingCause.None, state.EndingCause);
             Assert.AreEqual(0, state.StopsReached);
             Assert.AreEqual(0, state.MissedStops);
+            Assert.IsTrue(state.TutorialActive);
         }
 
         [Test]
@@ -47,6 +48,32 @@ namespace TerminalRoute.Tests
             Assert.AreEqual(EndingId.GoodTrip, state.Ending);
             Assert.AreEqual(EndingCause.CompletedRoute, state.EndingCause);
             Assert.AreEqual(8, state.StopsReached);
+        }
+
+        [Test]
+        public void NightmareModeUsesTwentyStopTarget()
+        {
+            var state = GameState.CreateNewRun(GameMode.Nightmare);
+
+            Assert.IsTrue(state.IsNightmare);
+            Assert.AreEqual(GameState.NightmareStopCount, state.TargetStopCount);
+            Assert.AreEqual(GameState.NightmareStopInterval, state.StopInterval);
+        }
+
+        [Test]
+        public void CompletingTwentyNightmareStopsTriggersGoodTripEnding()
+        {
+            var state = GameState.CreateNewRun(GameMode.Nightmare);
+
+            for (int i = 0; i < GameState.NightmareStopCount; i++)
+            {
+                state.CompleteStop();
+            }
+
+            Assert.AreEqual(GamePhase.Ended, state.Phase);
+            Assert.AreEqual(EndingId.GoodTrip, state.Ending);
+            Assert.AreEqual(EndingCause.CompletedRoute, state.EndingCause);
+            Assert.AreEqual(GameState.NightmareStopCount, state.StopsReached);
         }
 
         [Test]
@@ -80,6 +107,30 @@ namespace TerminalRoute.Tests
 
             state.CompleteStop();
             Assert.AreEqual(0, state.PassengerCount);
+        }
+
+        [Test]
+        public void CompletingTutorialDoesNotAdvanceRouteStops()
+        {
+            var state = GameState.CreateNewRun();
+
+            state.CompleteTutorial();
+
+            Assert.IsFalse(state.TutorialActive);
+            Assert.AreEqual(0, state.StopsReached);
+            Assert.AreEqual(1, state.Loop);
+            Assert.AreEqual(EndingId.None, state.Ending);
+        }
+
+        [Test]
+        public void OpenDoorPassengerLossReducesCountAndSanity()
+        {
+            var state = GameState.CreateNewRun();
+
+            state.LosePassenger();
+
+            Assert.AreEqual(21, state.PassengerCount);
+            Assert.Less(state.Sanity, 100f);
         }
     }
 }

@@ -2,7 +2,8 @@
     "name": "TerminalRoute.Runtime",
     "rootNamespace": "TerminalRoute.Runtime",
     "references": [
-        "TerminalRoute.Core"
+        "TerminalRoute.Core",
+        "Unity.InputSystem"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

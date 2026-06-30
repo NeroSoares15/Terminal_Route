@@ -5,6 +5,7 @@ namespace TerminalRoute.Runtime
 {
     public static class TerminalRouteBootstrap
     {
+        private const string EditorPreviewRootName = "Terminal Route Editor Preview";
         private static bool redirectingToMenu;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -30,6 +31,7 @@ namespace TerminalRoute.Runtime
         {
             string sceneName = scene.name;
             redirectingToMenu = false;
+            RemoveEditorPreviewRoot();
 
             if (sceneName == "Menu")
             {
@@ -56,6 +58,20 @@ namespace TerminalRoute.Runtime
 
             redirectingToMenu = true;
             SceneManager.LoadScene("Menu");
+        }
+
+        private static void RemoveEditorPreviewRoot()
+        {
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
+            GameObject previewRoot = GameObject.Find(EditorPreviewRootName);
+            if (previewRoot != null)
+            {
+                Object.Destroy(previewRoot);
+            }
         }
 
         private static void CreateController<T>(string objectName) where T : Component

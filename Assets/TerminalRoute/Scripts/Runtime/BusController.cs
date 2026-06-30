@@ -17,6 +17,7 @@ namespace TerminalRoute.Runtime
         private float currentSpeed;
         private float speedMultiplier;
         private float targetSpeedMultiplier;
+        private float smoothedSteeringInput;
         private bool paused;
 
         public BusController(Transform rig, Transform steeringWheel)
@@ -69,6 +70,7 @@ namespace TerminalRoute.Runtime
             currentSpeed = 12f;
             speedMultiplier = 1f;
             targetSpeedMultiplier = 1f;
+            smoothedSteeringInput = 0f;
             paused = false;
             UpdateSteeringWheel(0f, 1f);
         }
@@ -110,17 +112,26 @@ namespace TerminalRoute.Runtime
             {
                 input *= -1f;
             }
-            UpdateSteeringWheel(input, deltaTime);
-            float difficulty = Mathf.Clamp01((state.Loop - 1) / 4f);
+
+            float steeringResponse = Mathf.Abs(input) > 0.01f ? 4.4f : 6.8f;
+            smoothedSteeringInput = Mathf.MoveTowards(smoothedSteeringInput, input, steeringResponse * deltaTime);
+            UpdateSteeringWheel(smoothedSteeringInput, deltaTime);
+            float difficulty = Mathf.Clamp01((state.Loop - 1) / (state.IsNightmare ? 8f : 4f));
             float baseSpeed = 11.6f + difficulty * 3.2f + profile.VisualDistortion * 1.8f;
+            if (state.IsNightmare)
+            {
+                baseSpeed += 4.8f + difficulty * 2.2f;
+            }
+
             float speedChangeRate = targetSpeedMultiplier < speedMultiplier ? 1.35f : 0.72f;
             speedMultiplier = Mathf.MoveTowards(speedMultiplier, targetSpeedMultiplier, speedChangeRate * deltaTime);
             currentSpeed = baseSpeed * Mathf.Clamp(speedMultiplier, 0.08f, 1f);
-            float drift = Mathf.Sin(Time.time * (1.35f + difficulty * 0.65f)) * (profile.DriftStrength * 1.65f + difficulty * 0.34f);
-            float roadCrown = -rig.position.x * (0.22f + difficulty * 0.08f);
+            float nightmareInstability = state.IsNightmare ? 0.18f + difficulty * 0.22f : 0f;
+            float drift = Mathf.Sin(Time.time * (1.35f + difficulty * 0.65f)) * (profile.DriftStrength * 1.65f + difficulty * 0.34f + nightmareInstability);
+            float roadCrown = -rig.position.x * (0.22f + difficulty * 0.08f + (state.IsNightmare ? 0.05f : 0f));
 
             Vector3 position = rig.position;
-            float desiredX = position.x + ((input * 6.2f * profile.ControlMultiplier) + drift + roadCrown) * deltaTime;
+            float desiredX = position.x + ((smoothedSteeringInput * 5.65f * profile.ControlMultiplier) + drift + roadCrown) * deltaTime;
             bool pressingIntoGuardrail = Mathf.Abs(desiredX) > GuardrailHalfWidth && Mathf.Sign(desiredX) == Mathf.Sign(input == 0f ? desiredX : input);
             position.x = Mathf.Clamp(desiredX, -GuardrailHalfWidth, GuardrailHalfWidth);
             position.z += currentSpeed * deltaTime;

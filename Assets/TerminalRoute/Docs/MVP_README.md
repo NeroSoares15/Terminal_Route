@@ -58,4 +58,7 @@ Expected outputs:
 
 ## Unity Version
 
-This project is now hosted in Unity `2022.3.62f3` LTS with URP. Runtime controls use Unity's built-in input backend so the clean course project does not require the optional Input System package.
+This project is now hosted in Unity `6000.3.8f1` with URP `17.3.0`. Runtime controls use Unity's built-in input backend so the clean course project does not require the optional Input System package.
+
+After opening the project in Unity 6, allow the URP material upgrade/reimport prompts to finish before judging the visuals.
+If Unity shows the Auto Graphics API notice during migration, confirm it; Windows graphics APIs are pinned in Project Settings so the demo does not depend on Unity's changing default.

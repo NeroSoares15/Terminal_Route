@@ -142,8 +142,8 @@ The course documentation and presentation context use Portuguese, so the game de
 
 ## Technical Overview
 
-- Engine: Unity 2022.3 LTS.
-- Rendering: URP.
+- Engine: Unity 6000.3.8f1.
+- Rendering: URP 17.3.0.
 - Target platforms: Windows and WebGL.
 - Input: keyboard.
 - Assets: low-poly/procedural Unity primitives plus imported PSX asset packs.

@@ -14,7 +14,7 @@ namespace TerminalRoute.Runtime
             ui.ShowEnding(ending);
 
             var audioController = new TerminalRouteAudio(gameObject);
-            audioController.PlayEndingTone();
+            audioController.PlayEndingTone(ending);
         }
 
         private void Update()

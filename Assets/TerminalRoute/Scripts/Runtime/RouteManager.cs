@@ -5,9 +5,10 @@ namespace TerminalRoute.Runtime
     public sealed class RouteManager
     {
         public const float FirstStopZ = 75f;
-        public const float StopInterval = 124f;
+        public const float StopInterval = GameState.DefaultStopInterval;
         private const float StopDuration = 2.6f;
         private const float StopCaptureMinimumX = 1.25f;
+        private const float TutorialStopCaptureMinimumX = 0.55f;
         private const float StopCaptureLead = 8f;
         private const float StopCaptureTail = 8f;
         private const float StopParkX = 2.55f;
@@ -16,6 +17,7 @@ namespace TerminalRoute.Runtime
 
         private float nextStopZ;
         private float stopTimer;
+        private float stopInterval = StopInterval;
         private float alertTimer;
         private int nextStopIndex;
         private bool approachCuePlayed;
@@ -26,7 +28,13 @@ namespace TerminalRoute.Runtime
 
         public void Reset()
         {
+            Reset(GameState.CreateNewRun());
+        }
+
+        public void Reset(GameState state)
+        {
             nextStopZ = FirstStopZ;
+            stopInterval = state.StopInterval;
             stopTimer = 0f;
             TimeToNextStop = 55f;
             alertTimer = 0f;
@@ -57,26 +65,35 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
-            bus.SetTargetSpeedMultiplier(StopApproachSpeedMultiplier(bus.WorldZ, nextStopZ, bus.LateralPosition));
+            bool tutorialStop = state.TutorialActive && nextStopIndex == 0;
+            bus.SetTargetSpeedMultiplier(StopApproachSpeedMultiplier(bus.WorldZ, nextStopZ, tutorialStop ? MathfForTutorialStop(bus.LateralPosition) : bus.LateralPosition));
             float routeSpeed = UnityEngine.Mathf.Max(1f, bus.CurrentRouteSpeed);
             TimeToNextStop = UnityEngine.Mathf.Max(0f, (nextStopZ - bus.WorldZ) / routeSpeed);
-            TickStopGuidance(bus, audio);
+            TickStopGuidance(bus, audio, state);
 
-            if (HasReachedStopBoardingPoint(bus.WorldZ, nextStopZ) && IsInStopCaptureZone(bus.WorldZ, nextStopZ) && IsRightSideStop(bus.LateralPosition))
+            if (HasReachedStopBoardingPoint(bus.WorldZ, nextStopZ) && IsInStopCaptureZone(bus.WorldZ, nextStopZ) && IsRightSideStop(bus.LateralPosition, tutorialStop))
             {
                 BeginStop(state, bus, audio, scene);
                 return;
             }
 
-            if (IsInStopCaptureZone(bus.WorldZ, nextStopZ) && !IsRightSideStop(bus.LateralPosition))
+            if (IsInStopCaptureZone(bus.WorldZ, nextStopZ) && !IsRightSideStop(bus.LateralPosition, tutorialStop))
             {
-                AlertText = "APROXIMA-TE DA DIREITA";
+                AlertText = tutorialStop ? "TUTORIAL  //  ENCOSTA A DIREITA" : "APROXIMA-TE DA DIREITA";
                 alertTimer = 0.2f;
                 return;
             }
 
             if (HasPassedStopMissPoint(bus.WorldZ, nextStopZ))
             {
+                if (tutorialStop)
+                {
+                    AlertText = "TUTORIAL  //  PARAGEM ASSISTIDA";
+                    alertTimer = 2.2f;
+                    BeginStop(state, bus, audio, scene);
+                    return;
+                }
+
                 MissStop(state, bus, episodes, audio);
             }
         }
@@ -99,6 +116,11 @@ namespace TerminalRoute.Runtime
         public static bool IsRightSideStop(float lateralPosition)
         {
             return lateralPosition >= StopCaptureMinimumX;
+        }
+
+        private static bool IsRightSideStop(float lateralPosition, bool tutorialStop)
+        {
+            return lateralPosition >= (tutorialStop ? TutorialStopCaptureMinimumX : StopCaptureMinimumX);
         }
 
         public static float StopApproachSpeedMultiplier(float busZ, float stopZ, float lateralPosition)
@@ -124,6 +146,11 @@ namespace TerminalRoute.Runtime
             return UnityEngine.Mathf.Lerp(1f, StopApproachMinimumSpeed, easedApproach);
         }
 
+        private static float MathfForTutorialStop(float lateralPosition)
+        {
+            return lateralPosition >= TutorialStopCaptureMinimumX ? StopCaptureMinimumX : lateralPosition;
+        }
+
         private void BeginStop(GameState state, BusController bus, TerminalRouteAudio audio, SceneFactory scene)
         {
             state.SetPhase(GamePhase.Stopped);
@@ -137,19 +164,34 @@ namespace TerminalRoute.Runtime
 
         private void CompleteStop(GameState state, BusController bus, EpisodeManager episodes)
         {
+            if (state.TutorialActive)
+            {
+                state.CompleteTutorial();
+                nextStopZ += stopInterval;
+                nextStopIndex++;
+                approachCuePlayed = false;
+                state.SetPhase(GamePhase.Driving);
+                bus.SetPaused(false);
+                bus.SetTargetSpeedMultiplier(1f);
+                episodes.BeginLoop(state.Loop, state.Mode);
+                AlertText = state.IsNightmare ? "TUTORIAL COMPLETO  //  PESADELO" : "TUTORIAL COMPLETO  //  ROTA 04";
+                alertTimer = 3.2f;
+                return;
+            }
+
             state.CompleteStop();
             if (state.Phase == GamePhase.Ended)
             {
                 return;
             }
 
-            nextStopZ += StopInterval;
+            nextStopZ += stopInterval;
             nextStopIndex++;
             approachCuePlayed = false;
             state.SetPhase(GamePhase.Driving);
             bus.SetPaused(false);
             bus.SetTargetSpeedMultiplier(1f);
-            episodes.BeginLoop(state.Loop);
+            episodes.BeginLoop(state.Loop, state.Mode);
         }
 
         private void MissStop(GameState state, BusController bus, EpisodeManager episodes, TerminalRouteAudio audio)
@@ -164,14 +206,14 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
-            nextStopZ += StopInterval;
+            nextStopZ += stopInterval;
             nextStopIndex++;
             approachCuePlayed = false;
             bus.SetTargetSpeedMultiplier(1f);
-            episodes.BeginLoop(state.Loop);
+            episodes.BeginLoop(state.Loop, state.Mode);
         }
 
-        private void TickStopGuidance(BusController bus, TerminalRouteAudio audio)
+        private void TickStopGuidance(BusController bus, TerminalRouteAudio audio, GameState state)
         {
             float distance = nextStopZ - bus.WorldZ;
             if (distance > 0f && distance < 36f)
@@ -182,7 +224,8 @@ namespace TerminalRoute.Runtime
                     approachCuePlayed = true;
                 }
 
-                AlertText = IsRightSideStop(bus.LateralPosition) ? "APROXIMA-TE DA PARAGEM" : "ENCOSTA A DIREITA PARA PARAR";
+                bool tutorialStop = state.TutorialActive && nextStopIndex == 0;
+                AlertText = IsRightSideStop(bus.LateralPosition, tutorialStop) ? (tutorialStop ? "TUTORIAL  //  ENTRA NA ZONA VERDE" : "APROXIMA-TE DA PARAGEM") : "ENCOSTA A DIREITA PARA PARAR";
                 alertTimer = 0.24f;
             }
         }

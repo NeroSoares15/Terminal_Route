@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TerminalRoute.Core;
 
 namespace TerminalRoute.Runtime
 {
@@ -7,11 +8,13 @@ namespace TerminalRoute.Runtime
     {
         private TerminalRouteUi ui;
         private bool loadingRoute;
+        private int logoClickCount;
 
         private void Awake()
         {
             ui = new TerminalRouteUi();
-            ui.Build(BeginRoute, QuitGame);
+            ui.BuildMenu(BeginRoute, BeginNightmareRoute, QuitGame, HandleLogoClick);
+            ui.SetNightmareUnlocked(TerminalRouteSession.IsNightmareUnlocked);
             ui.ShowMenu();
 
             var audioController = new TerminalRouteAudio(gameObject);
@@ -36,15 +39,21 @@ namespace TerminalRoute.Runtime
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.C))
+            if (TerminalRouteInput.CreditsPressed())
             {
                 ui.ShowCredits();
                 return;
             }
 
-            if (Input.GetKeyDown(KeyCode.T))
+            if (TerminalRouteInput.ControlsPressed())
             {
                 ui.ShowControls();
+                return;
+            }
+
+            if (TerminalRouteInput.NightmarePressed())
+            {
+                BeginNightmareRoute();
                 return;
             }
 
@@ -56,14 +65,50 @@ namespace TerminalRoute.Runtime
 
         private void BeginRoute()
         {
+            BeginRoute(GameMode.Route04);
+        }
+
+        private void BeginNightmareRoute()
+        {
+            if (!TerminalRouteSession.IsNightmareUnlocked)
+            {
+                ui.ShowNightmareLockedMessage();
+                return;
+            }
+
+            BeginRoute(GameMode.Nightmare);
+        }
+
+        private void BeginRoute(GameMode mode)
+        {
             if (loadingRoute)
             {
                 return;
             }
 
             loadingRoute = true;
-            TerminalRouteSession.StartNewRun();
+            TerminalRouteSession.StartNewRun(mode);
             SceneManager.LoadScene("Route", LoadSceneMode.Single);
+        }
+
+        private void HandleLogoClick()
+        {
+            if (TerminalRouteSession.IsNightmareUnlocked)
+            {
+                return;
+            }
+
+            logoClickCount++;
+            if (logoClickCount >= 5)
+            {
+                TerminalRouteSession.UnlockNightmare();
+                ui.SetNightmareUnlocked(true);
+                ui.ShowNightmareUnlockedMessage();
+            }
+            else
+            {
+                ui.ShowNightmareUnlockProgress(logoClickCount);
+            }
         }
 
         private void QuitGame()

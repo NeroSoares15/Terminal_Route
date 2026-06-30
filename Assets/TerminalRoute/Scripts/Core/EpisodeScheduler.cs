@@ -4,6 +4,33 @@ namespace TerminalRoute.Core
     {
         public static EpisodeType GetEpisodeForLoop(int loop)
         {
+            return GetEpisodeForLoop(loop, GameMode.Route04);
+        }
+
+        public static EpisodeType GetEpisodeForLoop(int loop, GameMode mode)
+        {
+            if (mode == GameMode.Nightmare)
+            {
+                if (loop <= 1)
+                {
+                    return EpisodeType.None;
+                }
+
+                switch ((loop - 2) % 5)
+                {
+                    case 0:
+                        return EpisodeType.Silence;
+                    case 1:
+                        return EpisodeType.Monkey;
+                    case 2:
+                        return EpisodeType.Ball;
+                    case 3:
+                        return EpisodeType.InvertedControls;
+                    default:
+                        return EpisodeType.LightsOut;
+                }
+            }
+
             switch (loop)
             {
                 case 2:

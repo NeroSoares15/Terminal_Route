@@ -11,6 +11,9 @@ namespace TerminalRoute.Runtime
         private bool mirrorCostApplied;
         private int monkeyRow;
         private bool monkeyMovedAfterView;
+        private bool nightmareMode;
+        private int currentLoop;
+        private float nightmareBallOffset;
 
         public EpisodeManager(SceneFactory scene)
         {
@@ -24,22 +27,32 @@ namespace TerminalRoute.Runtime
 
         public bool InputsInverted
         {
-            get { return activeEpisode == EpisodeType.InvertedControls; }
+            get
+            {
+                bool nightmarePulse = nightmareMode && currentLoop >= 6 && Mathf.PingPong(Time.time, 10f) > 7.1f;
+                return activeEpisode == EpisodeType.InvertedControls || nightmarePulse;
+            }
         }
 
         public float LightsOutAmount
         {
             get
             {
+                float nightmareFlicker = 0f;
+                if (nightmareMode && currentLoop >= 4)
+                {
+                    nightmareFlicker = 0.08f + Mathf.PerlinNoise(Time.time * 7f, 0.31f) * 0.18f;
+                }
+
                 if (activeEpisode != EpisodeType.LightsOut)
                 {
-                    return 0f;
+                    return nightmareFlicker;
                 }
 
                 float fadeIn = Mathf.Clamp01(episodeTimer / 0.35f);
                 float fadeOut = Mathf.Clamp01((7.2f - episodeTimer) / 0.65f);
                 float flicker = 0.74f + Mathf.PerlinNoise(Time.time * 18f, 0.43f) * 0.26f;
-                return Mathf.Clamp01(Mathf.Min(fadeIn, fadeOut) * flicker);
+                return Mathf.Clamp01(Mathf.Max(nightmareFlicker, Mathf.Min(fadeIn, fadeOut) * flicker));
             }
         }
 
@@ -50,6 +63,9 @@ namespace TerminalRoute.Runtime
             mirrorCostApplied = false;
             monkeyRow = 10;
             monkeyMovedAfterView = false;
+            nightmareMode = false;
+            currentLoop = 1;
+            nightmareBallOffset = 0f;
             scene.Monkey.SetActive(false);
             scene.Ball.SetActive(false);
             foreach (var passenger in scene.Passengers)
@@ -60,10 +76,18 @@ namespace TerminalRoute.Runtime
 
         public void BeginLoop(int loop)
         {
-            activeEpisode = EpisodeScheduler.GetEpisodeForLoop(loop);
+            BeginLoop(loop, GameMode.Route04);
+        }
+
+        public void BeginLoop(int loop, GameMode mode)
+        {
+            nightmareMode = mode == GameMode.Nightmare;
+            currentLoop = loop;
+            activeEpisode = EpisodeScheduler.GetEpisodeForLoop(loop, mode);
             episodeTimer = 0f;
             mirrorCostApplied = false;
             monkeyMovedAfterView = false;
+            nightmareBallOffset = (loop % 4) * 0.17f;
 
             foreach (var passenger in scene.Passengers)
             {
@@ -87,11 +111,24 @@ namespace TerminalRoute.Runtime
             {
                 scene.Monkey.SetActive(false);
             }
+
+            if (nightmareMode && loop >= 2)
+            {
+                monkeyRow = Mathf.Clamp(11 - loop / 2, 2, 10);
+                scene.SetMonkeyRow(monkeyRow);
+                scene.Monkey.SetActive(true);
+            }
+
+            if (nightmareMode && loop >= 3)
+            {
+                scene.Ball.SetActive(true);
+                scene.SetBallProgress(0f);
+            }
         }
 
         public void Tick(float deltaTime, GameState state, MirrorView mirror, TerminalRouteAudio audio)
         {
-            if (activeEpisode == EpisodeType.None || state.Phase != GamePhase.Driving)
+            if (state.Phase != GamePhase.Driving)
             {
                 return;
             }
@@ -117,6 +154,38 @@ namespace TerminalRoute.Runtime
             else if (activeEpisode == EpisodeType.LightsOut)
             {
                 TickLightsOut(state, audio);
+            }
+
+            TickNightmarePressure(deltaTime, state, mirror);
+        }
+
+        private void TickNightmarePressure(float deltaTime, GameState state, MirrorView mirror)
+        {
+            if (!nightmareMode)
+            {
+                return;
+            }
+
+            if (currentLoop >= 3 && scene.Ball.activeSelf)
+            {
+                scene.SetBallProgress(Mathf.PingPong(episodeTimer * 0.22f + nightmareBallOffset, 1f));
+            }
+
+            if (currentLoop >= 5 && mirror.IsActive)
+            {
+                foreach (var passenger in scene.Passengers)
+                {
+                    passenger.SetStaring(true);
+                }
+
+                state.ApplySanityDelta(-deltaTime * 1.3f);
+            }
+            else if (activeEpisode != EpisodeType.Silence)
+            {
+                foreach (var passenger in scene.Passengers)
+                {
+                    passenger.SetStaring(false);
+                }
             }
         }
 
